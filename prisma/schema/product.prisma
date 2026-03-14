@@ -1,0 +1,125 @@
+model Product {
+    id            String      @id @default(cuid())
+    name          String
+    slug          String      @unique
+    sku           String      @unique
+    regularPrice  Float
+    salePrice     Float?
+    stockQuantity Int
+    stockStatus   StockStatus @default(IN_STOCK)
+    
+    shortDescription String?
+    fullDescription  String?
+    sizeGuidImage    String?
+    thumbnailImage   String?
+     
+    isDeleted Boolean @default(false)
+    isActive  Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    //============ Relations =============//
+
+    categories            ProductCategory[]
+    subCategories         ProductSubCategory[]
+    variants              Variant[]
+    images                ProductImage[]
+    tags                  Tag[]
+    additionalInformation AdditionalInfo[]
+
+    @@map("products")
+}
+
+model Category {
+    id   String @id @default(cuid())
+    name String
+
+    parentId String?
+    parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+    children Category[] @relation("CategoryHierarchy")
+
+    products ProductCategory[]
+}
+
+model ProductCategory {
+    id String @id @default(cuid())
+
+    productId  String
+    categoryId String
+
+    product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+    category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+    @@unique([productId, categoryId])
+}
+
+//============ SubCategory =============//
+
+model SubCategory {
+    id   String @id @default(cuid())
+    name String
+
+    parentId String?
+    parent   SubCategory?  @relation("SubCategoryHierarchy", fields: [parentId], references: [id])
+    children SubCategory[] @relation("SubCategoryHierarchy")
+
+    products ProductSubCategory[]
+}
+
+model ProductSubCategory {
+    id String @id @default(cuid())
+
+    productId     String
+    subCategoryId String
+
+    product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+    subCategory SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+    @@unique([productId, subCategoryId])
+}
+
+//============ ProductImage =============//
+
+model ProductImage {
+    id String @id @default(cuid())
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+    url String
+}
+
+//============ Variant =============//
+
+model Variant {
+    id String @id @default(cuid())
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+    color    String?
+    size     String?
+    quantity Int     @default(0)
+}
+
+//============ Tag =============//
+
+model Tag {
+    id   String @id @default(cuid())
+    name String @unique
+
+    products Product[]
+}
+
+//============ AdditionalInfo =============//
+
+model AdditionalInfo {
+    id String @id @default(cuid())
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+    label String
+    value String
+}

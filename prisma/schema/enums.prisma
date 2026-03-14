@@ -1,0 +1,25 @@
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  LOW_STOCK
+}
+
+
+enum AuthType {
+  CREDENTIALS
+  GOOGLE
+}
+
+// ========= User Related ========//
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
