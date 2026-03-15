@@ -10,7 +10,6 @@ const createCustomer = catchAsync(
   async (req: Request & { file?: Express.Multer.File }, res: Response) => {
  
     const result = await UserService.createCustomer(req);
-
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
       success: true,
@@ -36,9 +35,8 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createAdmin = catchAsync(async (req: Request & { file?: Express.Multer.File }, res: Response) => {
- 
-    const result = await UserService.createAdmin(req);
 
+    const result = await UserService.createAdmin(req);
     sendResponse(res, {
         statusCode : 201,
         success : true,
@@ -52,4 +50,5 @@ export const UserController = {
     getAllFromDB,
     createAdmin,
 };
+
 

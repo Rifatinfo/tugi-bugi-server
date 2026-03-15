@@ -1,9 +1,6 @@
 import express from "express";
-
 import { fileUploader } from "../../../utiles/fileUploader";
 import { UserValidation } from "./user.validation";
-import { UserRole } from "@prisma/client";
-import auth from "../../middlewares/auth";
 import { UserController } from "./user.controller";
 
 const router = express.Router();
@@ -13,7 +10,7 @@ const router = express.Router();
  ============================================== */
 
 router.post(
-    "/create",
+    "/create-customer",
     fileUploader.singleUpload("file"),
     (req, _res, next) => {
         try {
@@ -55,7 +52,6 @@ router.post(
     },
     UserController.createAdmin
 );
-
 
 
 router.get("/",  UserController.getAllFromDB);

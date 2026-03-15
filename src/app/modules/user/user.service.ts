@@ -9,61 +9,61 @@ import { userSearchableFields } from "./user.constant";
 import { generateUniqueSlug } from "../../../utiles/generateSlug";
 import { Prisma, UserRole } from "@prisma/client";
 import { IOptions, paginationHelper } from "../../../helpers/paginationHelper";
+import { generateUserSlug } from "../../../utiles/generateUserSlug";
+
+
 const createCustomer = async (req: Request & { file?: Express.Multer.File }) => {
-    const { name, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-    // ===== Generate slug =====
-    const slug = name ? await generateUniqueSlug(name.trim()) : `user-${crypto.randomBytes(6).toString("hex")}`;
-    let avatarUrl: string | null = null;
+  // ===== Generate slug (random suffix, no DB needed) =====
+  const slug = generateUserSlug(name?.trim());
 
-    if (req.file) {
-        const userFolder = `users/${slug}`;
-        const filename = await optimizeAndSaveImage(req.file, userFolder);
-        avatarUrl = `/uploads/${userFolder}/${filename}`;
-    }
+  // ===== Handle avatar =====
+  let avatarUrl: string | null = null;
+  if (req.file) {
+      const userFolder = `users/${slug}`;
+      const filename = await optimizeAndSaveImage(req.file, userFolder);
+      avatarUrl = `/uploads/${userFolder}/${filename}`;
+  }
 
+  // ===== Hash password =====
+  const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // ===== Hash password =====
-    const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+  // ===== Create user and related data =====
+  const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+          data: {
+              email,
+              name,
+              password: hashedPassword,
+              avatar: avatarUrl,
+              role: UserRole.CUSTOMER,
+          },
+      });
 
-    // ===== Prisma Transaction =====
-    const result = await prisma.$transaction(async (tx) => {
-        // 1 Create User
-        const user = await tx.user.create({
-            data: {
-                email,
-                name,
-                password: hashedPassword,
-                avatar: avatarUrl,
-                role: UserRole.CUSTOMER,
-            },
-        });
+      await tx.authProvider.create({
+          data: {
+              provider: "CREDENTIALS",
+              password: hashedPassword,
+              userId: user.id,
+          },
+      });
 
-        // 2 Create Auth Provider (Credentials)
-        await tx.authProvider.create({
-            data: {
-                provider: "CREDENTIALS",
-                password: hashedPassword,
-                userId: user.id,
-            },
-        });
+      const customer = await tx.customer.create({
+          data: {
+              userId: user.id,
+              name,
+              email,
+              avatar: avatarUrl,
+              password: hashedPassword,
+          },
+      });
 
-        // 3 Create Customer Profile
-        const customer = await tx.customer.create({
-            data: {
-                userId: user.id,
-                name,
-                email,
-                avatar: avatarUrl,
-                password: hashedPassword,
-            },
-        });
+      return customer;
+  });
 
-        return customer;
-    });
-
-    return result;
+  return result;
 };
 
 const getAllFromDB = async (params: any, options: IOptions) => {
@@ -121,7 +121,7 @@ const getAllFromDB = async (params: any, options: IOptions) => {
 
 
 const createAdmin = async (req: Request & { file?: Express.Multer.File }) => {
-    const { name, email, password , phone} = req.body;
+    const { name, email, password, phone } = req.body;
 
     // ===== Generate slug =====
     const slug = name ? await generateUniqueSlug(name.trim()) : `user-${crypto.randomBytes(6).toString("hex")}`;
@@ -172,6 +172,6 @@ const createAdmin = async (req: Request & { file?: Express.Multer.File }) => {
 
 export const UserService = {
     createCustomer,
-    getAllFromDB, 
+    getAllFromDB,
     createAdmin,
 };
