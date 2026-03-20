@@ -12,58 +12,125 @@ import { IOptions, paginationHelper } from "../../../helpers/paginationHelper";
 import { generateUserSlug } from "../../../utiles/generateUserSlug";
 
 
-const createCustomer = async (req: Request & { file?: Express.Multer.File }) => {
+// const createCustomer = async (req: Request & { file?: Express.Multer.File }) => {
+//   const { name, email, password } = req.body;
+//   console.log("file" , req.file)
+//   // ===== Generate slug (random suffix, no DB needed) =====
+//   const slug = generateUserSlug(name?.trim());
+//   console.log("slug" , slug);
+//   // ===== Handle avatar =====
+//   let avatarUrl: string | null = null;
+//   if (req.file) {
+//       const userFolder = `users/${slug}`;
+//       const filename = await optimizeAndSaveImage(req.file, userFolder);
+//       avatarUrl = `/uploads/${userFolder}/${filename}`;
+//   }
+
+//   // ===== Hash password =====
+//   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
+//   const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+//   // ===== Create user and related data =====
+//   const result = await prisma.$transaction(async (tx) => {
+//       const user = await tx.user.create({
+//           data: {
+//               email,
+//               name,
+//               password: hashedPassword,
+//               avatar: avatarUrl,
+//               role: UserRole.CUSTOMER,
+//           },
+//       });
+
+//       await tx.authProvider.create({
+//           data: {
+//               provider: "CREDENTIALS",
+//               password: hashedPassword,
+//               userId: user.id,
+//           },
+//       });
+
+//       const customer = await tx.customer.create({
+//           data: {
+//               userId: user.id,
+//               name,
+//               email,
+//               avatar: avatarUrl,
+//               password: hashedPassword,
+//           },
+//       });
+
+//       return customer;
+//   });
+
+//   return result;
+// };
+
+
+const createCustomer = async (
+  req: Request & { file?: Express.Multer.File }
+) => {
   const { name, email, password } = req.body;
 
-  // ===== Generate slug (random suffix, no DB needed) =====
+  // ===== 1. Generate slug =====
   const slug = generateUserSlug(name?.trim());
 
-  // ===== Handle avatar =====
-  let avatarUrl: string | null = null;
-  if (req.file) {
-      const userFolder = `users/${slug}`;
-      const filename = await optimizeAndSaveImage(req.file, userFolder);
-      avatarUrl = `/uploads/${userFolder}/${filename}`;
-  }
-
-  // ===== Hash password =====
+  // ===== 2. Parallel processing  =====
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-  // ===== Create user and related data =====
-  const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-          data: {
-              email,
-              name,
-              password: hashedPassword,
-              avatar: avatarUrl,
-              role: UserRole.CUSTOMER,
-          },
-      });
+  const [hashedPassword, filename] = await Promise.all([
+    bcrypt.hash(password, saltRounds),
 
-      await tx.authProvider.create({
-          data: {
-              provider: "CREDENTIALS",
-              password: hashedPassword,
-              userId: user.id,
-          },
-      });
+    req.file
+      ? optimizeAndSaveImage(req.file, `users/${slug}`)
+      : Promise.resolve(null),
+  ]);
 
-      const customer = await tx.customer.create({
-          data: {
-              userId: user.id,
-              name,
-              email,
-              avatar: avatarUrl,
-              password: hashedPassword,
-          },
-      });
+  const avatarUrl = filename
+    ? `/uploads/users/${slug}/${filename}`
+    : null;
 
-      return customer;
+  // ===== 3. Create User =====
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name,
+      slug, 
+      password: hashedPassword,
+      avatar: avatarUrl,
+      role: UserRole.CUSTOMER,
+    },
   });
 
-  return result;
+  // ===== 4. Create related data (Batch Transaction ) =====
+  await prisma.$transaction([
+    prisma.authProvider.create({
+      data: {
+        provider: "CREDENTIALS",
+        password: hashedPassword,
+        userId: user.id,
+      },
+    }),
+
+    prisma.customer.create({
+      data: {
+        userId: user.id,
+        name,
+        email,
+        avatar: avatarUrl,
+        password : hashedPassword
+      },
+    }),
+  ]);
+
+  // ===== 5. Return clean response =====
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    role: user.role,
+  };
 };
 
 const getAllFromDB = async (params: any, options: IOptions) => {
