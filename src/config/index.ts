@@ -9,11 +9,11 @@ interface EnvConfig {
     NODE_ENV: string,
     JWT_SECRET : string,
     FRONTEND_URL : string,
-    SALT_ROUND : string,
+    BCRYPT_SALT_ROUNDS : string,
 }
 
 const loadEnvVariable = (): EnvConfig => {
-    const requiredEnvVariable: string[] = ["PORT", "DATABASE_URL", "NODE_ENV", "JWT_SECRET", "FRONTEND_URL", "SALT_ROUND"]
+    const requiredEnvVariable: string[] = ["PORT", "DATABASE_URL", "NODE_ENV", "JWT_SECRET", "FRONTEND_URL", "BCRYPT_SALT_ROUNDS"]
 
     requiredEnvVariable.forEach(key => {
         if (!process.env[key]) {
@@ -28,7 +28,7 @@ const loadEnvVariable = (): EnvConfig => {
         NODE_ENV: process.env.NODE_ENV as string,
         JWT_SECRET : process.env.JWT_SECRET as string,
         FRONTEND_URL : process.env.FRONTEND_URL as string,
-        SALT_ROUND : process.env.SALT_ROUND as string,
+        BCRYPT_SALT_ROUNDS : process.env.BCRYPT_SALT_ROUNDS as string,
     }
 }
 
