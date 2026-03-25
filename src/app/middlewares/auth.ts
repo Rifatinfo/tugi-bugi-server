@@ -1,4 +1,4 @@
-import { NextFunction, Request } from "express"
+import { NextFunction, Response,Request } from "express"
 import ApiError from "../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
 import { jwtHelper } from "../../helpers/jwtHelpers";
@@ -8,7 +8,14 @@ import { envVars } from "../../config";
 const auth = (...roles: string[]) => {
     return async (req: Request & { user?: any }, res: Response, next: NextFunction) => {
         try {
-            const token = req.headers.authorization || req.cookies.accessToken;
+            // const token = req.headers.authorization || req.cookies.accessToken;
+            let token: string | undefined;
+            const authHeader = req.headers.authorization;
+            if(authHeader?.startsWith("Bearer ")){
+               token =  authHeader.split(" ")[1];
+            }else if(req.cookies?.accessToken){
+               token = req.cookies.accessToken;
+            }
             console.log({ token }, "from auth guard");
 
             if (!token) {

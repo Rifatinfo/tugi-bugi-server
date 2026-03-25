@@ -23,3 +23,8 @@ enum UserStatus {
   INACTIVE
   DELETED
 }
+
+enum DiscountType { 
+  PERCENTAGE 
+  FIXED 
+}

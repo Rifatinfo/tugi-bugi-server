@@ -6,11 +6,11 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 
 // Common multer configuration
-const multerConfig = {
+export const multerConfig = {
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-    files: 6, // max 4 files for multiple upload
+    fileSize: 50 * 1024 * 1024, // 5MB
+    files: 10, 
   },
   fileFilter: (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     if (!file.mimetype.startsWith("image/")) {
