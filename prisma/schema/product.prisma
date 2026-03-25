@@ -5,7 +5,7 @@ model Product {
     sku           String      @unique
     regularPrice  Float
     salePrice     Float?
-    stockQuantity Int
+    stockQuantity Int?
     stockStatus   StockStatus @default(IN_STOCK)
     
     shortDescription String?
@@ -27,7 +27,7 @@ model Product {
     images                ProductImage[]
     tags                  Tag[]
     additionalInformation AdditionalInfo[]
-
+    discounts Discount[] 
     @@map("products")
 }
 
@@ -40,6 +40,7 @@ model Category {
     children Category[] @relation("CategoryHierarchy")
 
     products ProductCategory[]
+    discounts Discount[] 
 }
 
 model ProductCategory {
@@ -65,6 +66,7 @@ model SubCategory {
     children SubCategory[] @relation("SubCategoryHierarchy")
 
     products ProductSubCategory[]
+    discounts Discount[] 
 }
 
 model ProductSubCategory {
@@ -123,3 +125,7 @@ model AdditionalInfo {
     label String
     value String
 }
+
+
+
+

@@ -1,0 +1,18 @@
+
+model Discount {
+  id        String   @id @default(cuid())
+  type      DiscountType
+  value     Float
+
+  startDate DateTime
+  endDate   DateTime
+
+  // Relations
+  products      Product[]
+  categories    Category[]
+  subCategories SubCategory[]
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}

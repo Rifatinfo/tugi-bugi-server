@@ -2,6 +2,8 @@ import express from "express";
 import { fileUploader } from "../../../utiles/fileUploader";
 import { UserValidation } from "./user.validation";
 import { UserController } from "./user.controller";
+import auth from "../../middlewares/auth";
+import { UserRole } from "@prisma/client";
 
 const router = express.Router();
 
@@ -54,6 +56,6 @@ router.post(
 );
 
 
-router.get("/",  UserController.getAllFromDB);
+router.get("/",  auth(UserRole.ADMIN), UserController.getAllFromDB);
 
 export const UserRoutes = router;
