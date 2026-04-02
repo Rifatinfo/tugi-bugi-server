@@ -1,5 +1,5 @@
 import express from "express";
-import { fileUploader } from "../../../utiles/fileUploader";
+import { fileUploader } from "../../../utils/fileUploader";
 import { UserValidation } from "./user.validation";
 import { UserController } from "./user.controller";
 import auth from "../../middlewares/auth";

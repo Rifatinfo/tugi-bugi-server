@@ -2,9 +2,12 @@ import express from 'express';
 import { UserRoutes } from '../modules/user/user.routes';
 import { ProductRoutes } from '../modules/product/product.routes';
 import { AuthRoutes } from '../modules/auth/auth.routes';
+import { apiLimiter } from '../middlewares/rateLimiter';
 
 
 const router = express.Router();
+
+// router.use(apiLimiter);
 
 const moduleRoutes = [
     

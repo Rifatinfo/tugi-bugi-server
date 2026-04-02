@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { multerConfig } from "../../../utiles/fileUploader";
+import { multerConfig } from "../../../utils/fileUploader";
 import { ProductController } from "./product.controller";
 import { createProductSchema, updateProductSchema } from "./product.validation";
 import multer from "multer";

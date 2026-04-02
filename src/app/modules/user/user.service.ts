@@ -3,13 +3,13 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { Request } from "express";
 import prisma from "../../../shared/prisma";
-import { optimizeAndSaveImage } from "../../../utiles/imageOptimizer";
+import { optimizeAndSaveImage } from "../../../utils/imageOptimizer";
 
 import { userSearchableFields } from "./user.constant";
-import { generateUniqueSlug } from "../../../utiles/generateSlug";
+import { generateUniqueSlug } from "../../../utils/generateSlug";
 import { Prisma, UserRole } from "@prisma/client";
 import { IOptions, paginationHelper } from "../../../helpers/paginationHelper";
-import { generateUserSlug } from "../../../utiles/generateUserSlug";
+import { generateUserSlug } from "../../../utils/generateUserSlug";
 
 
 // const createCustomer = async (req: Request & { file?: Express.Multer.File }) => {

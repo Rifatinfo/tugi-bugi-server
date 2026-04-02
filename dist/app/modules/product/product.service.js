@@ -1,43 +1,61 @@
-import { Prisma } from "@prisma/client";
-import { IOptions, paginationHelper } from "../../../helpers/paginationHelper";
-import prisma from "../../../shared/prisma";
-import { generateUniqueSlug } from "../../../utils/generateSlug";
-import { optimizeAndSaveImage } from "../../../utils/imageOptimizer";
-import { CreateProductInput } from "./product.interface";
-import { Request as ExpressRequest } from "express";
-import { productSearchableFields } from "./product.constant";
-import ApiError from "../../errors/ApiError";
-import { StatusCodes } from "http-status-codes";
-
-const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File[] }) => {
-    const data = req.body as CreateProductInput;
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProductService = void 0;
+const paginationHelper_1 = require("../../../helpers/paginationHelper");
+const prisma_1 = __importDefault(require("../../../shared/prisma"));
+const generateSlug_1 = require("../../../utils/generateSlug");
+const imageOptimizer_1 = require("../../../utils/imageOptimizer");
+const product_constant_1 = require("./product.constant");
+const ApiError_1 = __importDefault(require("../../errors/ApiError"));
+const http_status_codes_1 = require("http-status-codes");
+const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = req.body;
     console.log("Data : ", data);
     // ============= generate slug automatically ================//
-    const slug = await generateUniqueSlug(data.name);
-
+    const slug = yield (0, generateSlug_1.generateUniqueSlug)(data.name);
     const productFolder = `products/${slug}`;
-
     //============= Access files from request ===================//
-    const files = (req as any).galleryFiles; // already set in middleware
-    const thumbnailFile = (req as any).thumbnailImage;
-    const sizeGuidFile = (req as any).sizeGuidImage;
-
+    const files = req.galleryFiles; // already set in middleware
+    const thumbnailFile = req.thumbnailImage;
+    const sizeGuidFile = req.sizeGuidImage;
     // ========== Parallel image optimization ==========
-    const imagePromises: Promise<string>[] = [];
-
-    if (thumbnailFile) imagePromises.push(optimizeAndSaveImage(thumbnailFile, productFolder));
-    if (sizeGuidFile) imagePromises.push(optimizeAndSaveImage(sizeGuidFile, productFolder));
-    if (files?.length) files.forEach((file: any) => imagePromises.push(optimizeAndSaveImage(file, productFolder)));
-    const filenames = await Promise.all(imagePromises);
-
+    const imagePromises = [];
+    if (thumbnailFile)
+        imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(thumbnailFile, productFolder));
+    if (sizeGuidFile)
+        imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(sizeGuidFile, productFolder));
+    if (files === null || files === void 0 ? void 0 : files.length)
+        files.forEach((file) => imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(file, productFolder)));
+    const filenames = yield Promise.all(imagePromises);
     let idx = 0;
     //=================== Process images =======================// 
     const thumbnailUrl = thumbnailFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
     const sizeGuidUrl = sizeGuidFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
-    const imageUrls = files?.length ? filenames.slice(idx).map(f => `/uploads/${productFolder}/${f}`) : [];
-
-
-    return prisma.product.create({
+    const imageUrls = (files === null || files === void 0 ? void 0 : files.length) ? filenames.slice(idx).map(f => `/uploads/${productFolder}/${f}`) : [];
+    return prisma_1.default.product.create({
         data: {
             name: data.name,
             slug,
@@ -48,14 +66,12 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
             stockStatus: data.stockStatus || "IN_STOCK",
             shortDescription: data.shortDescription,
             fullDescription: data.fullDescription,
-
             thumbnailImage: thumbnailUrl,
             sizeGuidImage: sizeGuidUrl,
             // ====== Images ======
             images: {
                 create: imageUrls.map((url) => ({ url })),
             },
-
             // ===== Categories =====
             categories: data.categories
                 ? {
@@ -69,11 +85,10 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
                     })),
                 }
                 : undefined,
-
             // ===== SubCategories =====
             subCategories: data.subCategories
                 ? {
-                    create: data.subCategories.map((subCategory: any) => {
+                    create: data.subCategories.map((subCategory) => {
                         if (typeof subCategory === "string") {
                             return {
                                 subCategory: {
@@ -83,7 +98,8 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
                                     },
                                 },
                             };
-                        } else {
+                        }
+                        else {
                             // it's an object with id, name, parentId
                             return {
                                 subCategory: {
@@ -101,19 +117,19 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
                     }),
                 }
                 : undefined,
-
-
             // ===== Variants =====
             variants: data.variants
                 ? {
-                    create: data.variants.map((variant) => ({
-                        color: variant.color,
-                        size: variant.size,
-                        quantity: variant.quantity ?? 0,
-                    })),
+                    create: data.variants.map((variant) => {
+                        var _a;
+                        return ({
+                            color: variant.color,
+                            size: variant.size,
+                            quantity: (_a = variant.quantity) !== null && _a !== void 0 ? _a : 0,
+                        });
+                    }),
                 }
                 : undefined,
-
             // ===== Tags =====
             tags: data.tags
                 ? {
@@ -123,7 +139,6 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
                     })),
                 }
                 : undefined,
-
             // ===== Additional Info =====
             additionalInformation: data.additionalInformation
                 ? {
@@ -143,21 +158,20 @@ const createProduct = async (req: ExpressRequest & { files?: Express.Multer.File
             tags: true,
         }
     });
-};
-const getProducts = async (params: any, options: IOptions) => {
-    const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
-    const { searchTerm, category, subCategory, ...filterData } = params;
-
-    const andConditions: Prisma.ProductWhereInput[] = [];
+});
+const getProducts = (params, options) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper_1.paginationHelper.calculatePagination(options);
+    const { searchTerm, category, subCategory } = params, filterData = __rest(params, ["searchTerm", "category", "subCategory"]);
+    const andConditions = [];
     if (searchTerm) {
         andConditions.push({
-            OR: productSearchableFields.map(field => ({
+            OR: product_constant_1.productSearchableFields.map(field => ({
                 [field]: {
                     contains: searchTerm,
                     mode: "insensitive"
                 }
             }))
-        })
+        });
     }
     if (category) {
         andConditions.push({
@@ -181,14 +195,13 @@ const getProducts = async (params: any, options: IOptions) => {
         andConditions.push({
             AND: Object.keys(filterData).map(key => ({
                 [key]: {
-                    equals: (filterData as any)[key]
+                    equals: filterData[key]
                 }
             }))
-        })
+        });
     }
-
-    const whereCondition: Prisma.ProductWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
-    const result = await prisma.product.findMany({
+    const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
+    const result = yield prisma_1.default.product.findMany({
         skip,
         take: limit,
         orderBy: {
@@ -204,7 +217,7 @@ const getProducts = async (params: any, options: IOptions) => {
             tags: true,
         }
     });
-    const total = await prisma.product.count({ where: whereCondition })
+    const total = yield prisma_1.default.product.count({ where: whereCondition });
     return {
         meta: {
             page,
@@ -213,10 +226,9 @@ const getProducts = async (params: any, options: IOptions) => {
         },
         data: result,
     };
-};
-
-const getProductBySlug = async (slug: string) => {
-    const product = await prisma.product.findUnique({
+});
+const getProductBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+    const product = yield prisma_1.default.product.findUnique({
         where: {
             slug,
         },
@@ -229,126 +241,99 @@ const getProductBySlug = async (slug: string) => {
             additionalInformation: true,
         },
     });
-
     if (!product) {
-        throw new ApiError(StatusCodes.NOT_FOUND, "Product not found");
+        throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Product not found");
     }
-
     return product;
-};
-
-const deleteProduct = async (productId: string) => {
+});
+const deleteProduct = (productId) => __awaiter(void 0, void 0, void 0, function* () {
     //================ 1. Check if product exists ==============//
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = yield prisma_1.default.product.findUnique({
         where: {
             id: productId,
         },
     });
-
     if (!existingProduct) {
-        throw new ApiError(StatusCodes.NOT_FOUND, "Product not found");
+        throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Product not found");
     }
-
     //================== 2. Delete product ====================//
-    const deletedProduct = await prisma.product.delete({
+    const deletedProduct = yield prisma_1.default.product.delete({
         where: {
             id: productId,
         },
     });
-
     return deletedProduct;
-};
-
-const updateProduct = async (
-    productId: string,
-    req: ExpressRequest & { files?: Express.Multer.File[] }
-) => {
-    const data = req.body as Partial<CreateProductInput>;
-
+});
+const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const data = req.body;
     // 1️ Check existing product
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = yield prisma_1.default.product.findUnique({
         where: { id: productId },
         include: { images: true },
     });
-
     if (!existingProduct) {
-        throw new ApiError(StatusCodes.NOT_FOUND, "Product not found");
+        throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Product not found");
     }
-
     // 2️ Generate new slug if name changed
     let slug = existingProduct.slug;
     if (data.name && data.name !== existingProduct.name) {
-        slug = await generateUniqueSlug(data.name);
+        slug = yield (0, generateSlug_1.generateUniqueSlug)(data.name);
     }
-
     const productFolder = `products/${slug}`;
-
     // 3️ Process images outside DB
-    const files = (req as any).galleryFiles;
-    const thumbnailFile = (req as any).thumbnailImage;
-    const sizeGuidFile = (req as any).sizeGuidImage;
-
-    const imagePromises: Promise<string>[] = [];
+    const files = req.galleryFiles;
+    const thumbnailFile = req.thumbnailImage;
+    const sizeGuidFile = req.sizeGuidImage;
+    const imagePromises = [];
     if (thumbnailFile)
-        imagePromises.push(optimizeAndSaveImage(thumbnailFile, productFolder));
+        imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(thumbnailFile, productFolder));
     if (sizeGuidFile)
-        imagePromises.push(optimizeAndSaveImage(sizeGuidFile, productFolder));
-    if (files?.length)
-        files.forEach((file: any) =>
-            imagePromises.push(optimizeAndSaveImage(file, productFolder))
-        );
-
-    const filenames = await Promise.all(imagePromises);
+        imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(sizeGuidFile, productFolder));
+    if (files === null || files === void 0 ? void 0 : files.length)
+        files.forEach((file) => imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(file, productFolder)));
+    const filenames = yield Promise.all(imagePromises);
     let idx = 0;
-
     const thumbnailUrl = thumbnailFile
         ? `/uploads/${productFolder}/${filenames[idx++]}`
         : existingProduct.thumbnailImage;
-
     const sizeGuidUrl = sizeGuidFile
         ? `/uploads/${productFolder}/${filenames[idx++]}`
         : existingProduct.sizeGuidImage;
-
-    const newGalleryUrls = files?.length
+    const newGalleryUrls = (files === null || files === void 0 ? void 0 : files.length)
         ? filenames.slice(idx).map((f) => `/uploads/${productFolder}/${f}`)
         : [];
-
     // 4️ Delete old relations before update
-    await Promise.all([
-        prisma.productCategory.deleteMany({ where: { productId } }),
-        prisma.productSubCategory.deleteMany({ where: { productId } }),
-        prisma.variant.deleteMany({ where: { productId } }),
-        prisma.additionalInfo.deleteMany({ where: { productId } }),
+    yield Promise.all([
+        prisma_1.default.productCategory.deleteMany({ where: { productId } }),
+        prisma_1.default.productSubCategory.deleteMany({ where: { productId } }),
+        prisma_1.default.variant.deleteMany({ where: { productId } }),
+        prisma_1.default.additionalInfo.deleteMany({ where: { productId } }),
         newGalleryUrls.length
-            ? prisma.productImage.deleteMany({ where: { productId } })
+            ? prisma_1.default.productImage.deleteMany({ where: { productId } })
             : Promise.resolve(),
     ]);
-
     // 5️ Update product with new data
-    const updatedProduct = await prisma.product.update({
+    const updatedProduct = yield prisma_1.default.product.update({
         where: { id: productId },
         data: {
-            name: data.name ?? existingProduct.name,
+            name: (_a = data.name) !== null && _a !== void 0 ? _a : existingProduct.name,
             slug,
-            sku: data.sku ?? existingProduct.sku,
-            regularPrice: data.regularPrice ?? existingProduct.regularPrice,
-            salePrice: data.salePrice ?? existingProduct.salePrice,
-            stockQuantity: data.stockQuantity ?? existingProduct.stockQuantity,
-            stockStatus: data.stockStatus ?? existingProduct.stockStatus,
-            shortDescription:
-                data.shortDescription ?? existingProduct.shortDescription,
-            fullDescription: data.fullDescription ?? existingProduct.fullDescription,
-
+            sku: (_b = data.sku) !== null && _b !== void 0 ? _b : existingProduct.sku,
+            regularPrice: (_c = data.regularPrice) !== null && _c !== void 0 ? _c : existingProduct.regularPrice,
+            salePrice: (_d = data.salePrice) !== null && _d !== void 0 ? _d : existingProduct.salePrice,
+            stockQuantity: (_e = data.stockQuantity) !== null && _e !== void 0 ? _e : existingProduct.stockQuantity,
+            stockStatus: (_f = data.stockStatus) !== null && _f !== void 0 ? _f : existingProduct.stockStatus,
+            shortDescription: (_g = data.shortDescription) !== null && _g !== void 0 ? _g : existingProduct.shortDescription,
+            fullDescription: (_h = data.fullDescription) !== null && _h !== void 0 ? _h : existingProduct.fullDescription,
             thumbnailImage: thumbnailUrl,
             sizeGuidImage: sizeGuidUrl,
-
             // Images
             images: newGalleryUrls.length
                 ? {
                     create: newGalleryUrls.map((url) => ({ url })),
                 }
                 : undefined,
-
             // Categories
             categories: data.categories
                 ? {
@@ -362,7 +347,6 @@ const updateProduct = async (
                     })),
                 }
                 : undefined,
-
             // SubCategories
             subCategories: data.subCategories
                 ? {
@@ -376,7 +360,8 @@ const updateProduct = async (
                                     },
                                 },
                             };
-                        } else {
+                        }
+                        else {
                             return {
                                 subCategory: {
                                     connectOrCreate: {
@@ -393,18 +378,19 @@ const updateProduct = async (
                     }),
                 }
                 : undefined,
-
             // Variants
             variants: data.variants
                 ? {
-                    create: data.variants.map((variant) => ({
-                        color: variant.color,
-                        size: variant.size,
-                        quantity: variant.quantity ?? 0,
-                    })),
+                    create: data.variants.map((variant) => {
+                        var _a;
+                        return ({
+                            color: variant.color,
+                            size: variant.size,
+                            quantity: (_a = variant.quantity) !== null && _a !== void 0 ? _a : 0,
+                        });
+                    }),
                 }
                 : undefined,
-
             // Tags
             tags: data.tags
                 ? {
@@ -415,7 +401,6 @@ const updateProduct = async (
                     })),
                 }
                 : undefined,
-
             // Additional Info
             additionalInformation: data.additionalInformation
                 ? {
@@ -435,15 +420,12 @@ const updateProduct = async (
             tags: true,
         },
     });
-
     return updatedProduct;
-};
-
-export const ProductService = {
+});
+exports.ProductService = {
     createProduct,
     getProducts,
     getProductBySlug,
     deleteProduct,
     updateProduct
-}
-
+};
