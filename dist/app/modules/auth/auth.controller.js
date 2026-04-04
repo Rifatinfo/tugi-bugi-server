@@ -107,6 +107,7 @@ const resetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         token = req.cookies.accessToken;
     }
     const user = req.user; // Will be populated if authenticated via middleware
+    console.log("TokenC : ", token, "UserC", user);
     yield auth_service_1.AuthService.resetPassword(token, req.body, user);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

@@ -114,18 +114,101 @@ const forgotPassword = (payload) => __awaiter(void 0, void 0, void 0, function* 
     if (!userData.email) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User email not found");
     }
+    console.log("Secreate : ", config_1.envVars.RESET_PASS_SECRET, config_1.envVars.RESET_PASS_TOKEN_EXPIRES_IN);
     const resetPassToken = jwtHelpers_1.jwtHelper.generateToken({ email: userData.email, role: userData.role }, config_1.envVars.RESET_PASS_SECRET, config_1.envVars.RESET_PASS_TOKEN_EXPIRES_IN);
     // const resetPassLink = `${envVars.RESET_PASS_LINK}?email=${encodeURIComponent(userData.email)}&userId=${userData.id}&token=${resetPassToken}`;
     const resetPassLink = config_1.envVars.RESET_PASS_LINK + `?email=${encodeURIComponent(userData.email)}&token=${resetPassToken}`;
     yield (0, sendEmail_1.sendEmail)({
         to: userData.email,
-        subject: "Reset Your Password | Tuki Buki",
-        templateName: "forgotPassword",
+        subject: "Reset Your Password",
+        html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #FF5000 0%, #FF5000 100%); border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Mi Shop</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h2 style="margin: 0 0 20px 0; color: #333333; font-size: 24px; font-weight: 600;">Reset Your Password</h2>
+
+                            <p style="margin: 0 0 20px 0; color: #666666; font-size: 16px; line-height: 24px;">
+                                Hello <%= name %>,
+                            </p>
+
+                            <p style="margin: 0 0 30px 0; color: #666666; font-size: 16px; line-height: 24px;">
+                                We received a request to reset your password for your Mi Shop account. Click the button below to create a new password:
+                            </p>
+
+                            <!-- Button -->
+                            <table role="presentation" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="border-radius: 6px; background: linear-gradient(135deg, #FF5000 0%, #FF5000 100%);">
+                                        <a href="<%= resetLink %>" style="border: none; color: #ffffff; padding: 14px 32px; text-decoration: none; font-size: 16px; font-weight: 600; display: inline-block; border-radius: 6px;">
+                                            Reset Password
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 30px 0 20px 0; color: #666666; font-size: 14px; line-height: 20px;">
+                                Or copy and paste this link into your browser:
+                            </p>
+
+                            <p style="margin: 0 0 30px 0; color: #FF5000; font-size: 14px; line-height: 20px; word-break: break-all;">
+                                <%= resetLink %>
+                            </p>
+
+                            <div style="border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">
+                                <p style="margin: 0 0 10px 0; color: #999999; font-size: 14px; line-height: 20px;">
+                                    <strong>Security Notice:</strong>
+                                </p>
+                                <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #999999; font-size: 14px; line-height: 20px;">
+                                    <li>This link will expire in 15 minutes</li>
+                                    <li>If you didn't request this password reset, please ignore this email</li>
+                                    <li>For security reasons, never share this link with anyone</li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0 0 10px 0; color: #999999; font-size: 14px;">
+                                © <%= year %> Mi Shop. All rights reserved.
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                                This is an automated email. Please do not reply.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+               </html>`,
         templateData: {
-            name: (_a = userData.name) !== null && _a !== void 0 ? _a : "Valued Customer",
+            name: (_a = userData.name) !== null && _a !== void 0 ? _a : "User",
             resetLink: resetPassLink,
-            year: new Date().getFullYear(),
-        },
+            year: new Date().getFullYear()
+        }
     });
 });
 const resetPassword = (token, payload, user) => __awaiter(void 0, void 0, void 0, function* () {
@@ -198,7 +281,7 @@ const changePassword = (user, payload) => __awaiter(void 0, void 0, void 0, func
         },
         data: {
             password: hashedPassword,
-            needPasswordChange: false
+            needPasswordChange: true
         }
     });
     return {

@@ -18,9 +18,7 @@ const nodemailer_1 = __importDefault(require("nodemailer"));
 const path_1 = __importDefault(require("path"));
 const config_1 = require("../config");
 const transporter = nodemailer_1.default.createTransport({
-    //   host: envVars.SMTP_HOST,
     host: "smtp.gmail.com",
-    //   port: Number(envVars.SMTP_PORT),
     port: 587,
     secure: false,
     auth: {
@@ -33,26 +31,31 @@ const transporter = nodemailer_1.default.createTransport({
 });
 transporter.verify();
 console.log("✅ SMTP Server is ready");
-const sendEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, subject, templateName, templateData, attachments }) {
+const sendEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, subject, templateName, templateData, html, attachments }) {
     try {
-        // const templatePath = path.join(process.cwd(), "src", "utils", "templates", `${templateName}.ejs`);
-        const templatePath = path_1.default.join(process.cwd(), "src", "templates", `${templateName}.ejs`);
-        console.log("Template path:", templatePath);
-        console.log("Template path:", templatePath, templateData);
-        const html = yield ejs_1.default.renderFile(templatePath, templateData);
+        let finalHtml = html;
+        // 👉 If templateName exists → use EJS file
+        if (templateName) {
+            const templatePath = path_1.default.join(process.cwd(), "templates", `${templateName}.ejs`);
+            console.log("Template path:", templatePath);
+            finalHtml = yield ejs_1.default.renderFile(templatePath, templateData);
+        }
+        // 👉 If NO templateName but html exists → render dynamic variables inline
+        else if (html) {
+            finalHtml = ejs_1.default.render(html, templateData); //  MAGIC LINE
+        }
+        if (!finalHtml) {
+            throw new Error("No email content provided");
+        }
         const info = yield transporter.sendMail({
             from: config_1.envVars.SMTP_FROM,
-            // from: '"Tuki Buki" <mdrifathossainsinfo@gmail.com>',
-            to: to,
-            subject: subject,
-            html: html,
-            attachments: attachments === null || attachments === void 0 ? void 0 : attachments.map(attachment => ({
-                filename: attachment.filename,
-                content: attachment.content,
-                contentType: attachment.contentType
-            }))
+            to,
+            subject,
+            html: finalHtml,
+            attachments
         });
-        console.log(`\u20709\uFE0F Email send to ${to} : ${info.messageId}`);
+        console.log(`📧 Email sent to ${to}: ${info.messageId}`);
+        return true;
     }
     catch (error) {
         console.error("❌ Email send failed:", error);
