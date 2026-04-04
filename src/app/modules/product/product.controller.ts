@@ -5,6 +5,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { ProductService } from "./product.service";
 import pick from "../../../shared/pick";
 import { productFilterableFields } from "./product.constant";
+import prisma from "../../../shared/prisma";
 
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
@@ -74,12 +75,65 @@ const updateProduct = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// ====================== category ==================// 
+const createCategory = catchAsync(async (req: Request, res: Response) => {
+    const { name } = req.body;
+    const category = await prisma.category.create({
+        data: { name },
+    });
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product createCategory successfully",
+        data: category,
+    });
+});
+
+const getAllCategories = catchAsync(async (req: Request, res: Response) => {
+    const categories = await prisma.category.findMany();
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product getAllCategories successfully",
+        data: categories,
+    });
+});
+
+const createSubCategory = async (req: Request, res: Response) => {
+    const { name } = req.body;
+
+    const sub = await prisma.subCategory.create({
+        data: { name },
+    });
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product createSubCategory successfully",
+        data: sub,
+    });
+};
+
+//==============  GET ALL SUBCATEGORY ===================//
+ const getAllSubCategories = async (req: Request, res: Response) => {
+    const sub = await prisma.subCategory.findMany();
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product getAllSubCategories successfully",
+        data: sub,
+    });
+};
+
 export const ProductController = {
     createProduct,
     getAllProduct,
     getProductBySlug,
     deleteProduct,
-    updateProduct
+    updateProduct,
+    createCategory,
+    getAllCategories,
+    createSubCategory,
+    getAllSubCategories
 };
 
 

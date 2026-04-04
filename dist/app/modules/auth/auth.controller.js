@@ -94,19 +94,9 @@ const forgotPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     });
 }));
 const resetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // Extract token from Authorization header (remove "Bearer " prefix)
-    // const authHeader = req.headers.authorization;
     var _a;
-    // const token = authHeader ? authHeader.replace('Bearer ', '') : null;
-    let token;
-    const authHeader = req.headers.authorization;
-    if (authHeader === null || authHeader === void 0 ? void 0 : authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-    }
-    else if ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) {
-        token = req.cookies.accessToken;
-    }
-    const user = req.user; // Will be populated if authenticated via middleware
+    const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1];
+    const user = req.user;
     console.log("TokenC : ", token, "UserC", user);
     yield auth_service_1.AuthService.resetPassword(token, req.body, user);
     (0, sendResponse_1.default)(res, {

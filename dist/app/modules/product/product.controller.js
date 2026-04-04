@@ -19,6 +19,7 @@ const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const product_service_1 = require("./product.service");
 const pick_1 = __importDefault(require("../../../shared/pick"));
 const product_constant_1 = require("./product.constant");
+const prisma_1 = __importDefault(require("../../../shared/prisma"));
 const createProduct = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const product = yield product_service_1.ProductService.createProduct(req);
     console.log("product : ", product);
@@ -73,10 +74,58 @@ const updateProduct = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
+// ====================== category ==================// 
+const createCategory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.body;
+    const category = yield prisma_1.default.category.create({
+        data: { name },
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product createCategory successfully",
+        data: category,
+    });
+}));
+const getAllCategories = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const categories = yield prisma_1.default.category.findMany();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product getAllCategories successfully",
+        data: categories,
+    });
+}));
+const createSubCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.body;
+    const sub = yield prisma_1.default.subCategory.create({
+        data: { name },
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product createSubCategory successfully",
+        data: sub,
+    });
+});
+//==============  GET ALL SUBCATEGORY ===================//
+const getAllSubCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const sub = yield prisma_1.default.subCategory.findMany();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product getAllSubCategories successfully",
+        data: sub,
+    });
+});
 exports.ProductController = {
     createProduct,
     getAllProduct,
     getProductBySlug,
     deleteProduct,
-    updateProduct
+    updateProduct,
+    createCategory,
+    getAllCategories,
+    createSubCategory,
+    getAllSubCategories
 };

@@ -67,4 +67,9 @@ router.patch("/:productId", (req, res, next) => {
         next(error);
     }
 }, product_controller_1.ProductController.updateProduct);
+//=============== category and subcategory ======================// 
+router.post("/create-category", product_controller_1.ProductController.createCategory);
+router.get("/category", product_controller_1.ProductController.getAllCategories);
+router.post("/create-sub-category", product_controller_1.ProductController.createSubCategory);
+router.get("/sub-category", product_controller_1.ProductController.getAllSubCategories);
 exports.ProductRoutes = router;
