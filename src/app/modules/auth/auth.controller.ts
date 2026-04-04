@@ -107,15 +107,16 @@ const resetPassword = catchAsync(async (req: Request & { user?: any }, res: Resp
     // const authHeader = req.headers.authorization;
 
     // const token = authHeader ? authHeader.replace('Bearer ', '') : null;
-    let token: string | undefined;
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-    } else if (req.cookies?.accessToken) {
-        token = req.cookies.accessToken;
-    }
+    // let token: string | undefined;
+    // const authHeader = req.headers.authorization;
+    // if (authHeader?.startsWith("Bearer ")) {
+    //     token = authHeader.split(" ")[1];
+    // } else if (req.cookies?.accessToken) {
+    //     token = req.cookies.accessToken;
+    // }
+    const token = req.headers.authorization?.split(" ")[1];
     const user = req.user; // Will be populated if authenticated via middleware
-
+    console.log("TokenC : ", token, "UserC", user);
     await AuthService.resetPassword(token as string, req.body, user);
 
     sendResponse(res, {
