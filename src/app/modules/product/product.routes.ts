@@ -46,7 +46,7 @@ router.post(
 router.get("/", ProductController.getAllProduct);
 router.get("/slug/:slug", ProductController.getProductBySlug);
 router.delete("/:productId", ProductController.deleteProduct);
-router.patch("/:productId", 
+router.patch("/:slug", 
   (req, res, next) => {
     productUpload(req, res, (err) => {
       if(err) return next(err);
@@ -80,8 +80,10 @@ router.patch("/:productId",
 
 router.post("/create-category", ProductController.createCategory);
 router.get("/category", ProductController.getAllCategories);
+router.delete("/category/:id", ProductController.deleteCategory);
 router.post("/create-sub-category", ProductController.createSubCategory);
 router.get("/sub-category", ProductController.getAllSubCategories);
+router.delete("/sub-category/:id", ProductController.deleteSubCategory);
 
 
 export const ProductRoutes = router;

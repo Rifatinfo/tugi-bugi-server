@@ -32,6 +32,7 @@ const product_constant_1 = require("./product.constant");
 const ApiError_1 = __importDefault(require("../../errors/ApiError"));
 const http_status_codes_1 = require("http-status-codes");
 const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const data = req.body;
     console.log("Data : ", data);
     // ============= generate slug automatically ================//
@@ -55,6 +56,8 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
     const thumbnailUrl = thumbnailFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
     const sizeGuidUrl = sizeGuidFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
     const imageUrls = (files === null || files === void 0 ? void 0 : files.length) ? filenames.slice(idx).map(f => `/uploads/${productFolder}/${f}`) : [];
+    // ===== Process discounts =====
+    const discountData = (_a = data.discount) === null || _a === void 0 ? void 0 : _a[0];
     return prisma_1.default.product.create({
         data: {
             name: data.name,
@@ -148,6 +151,12 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
                     })),
                 }
                 : undefined,
+            // ====== One-to-One Discount ======
+            discount: discountData && discountData.value > 0
+                ? {
+                    create: Object.assign(Object.assign({ type: discountData.type, value: Number(discountData.value), isActive: true }, (discountData.startDate ? { startDate: new Date(discountData.startDate) } : {})), (discountData.endDate ? { endDate: new Date(discountData.endDate) } : {})),
+                }
+                : undefined,
         },
         include: {
             categories: true,
@@ -156,6 +165,7 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
             images: true,
             additionalInformation: true,
             tags: true,
+            discount: true,
         }
     });
 });

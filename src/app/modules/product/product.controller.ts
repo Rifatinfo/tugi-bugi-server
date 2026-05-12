@@ -60,10 +60,10 @@ const deleteProduct = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateProduct = catchAsync(async (req: Request, res: Response) => {
-    const { productId } = req.params;
+    const { slug } = req.params;
 
     const result = await ProductService.updateProduct(
-        productId as string,
+        slug as string,
         req as Request & { files?: Express.Multer.File[] }
     );
 
@@ -99,7 +99,7 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const createSubCategory = async (req: Request, res: Response) => {
+const createSubCategory = catchAsync(async (req: Request, res: Response) => {
     const { name } = req.body;
 
     const sub = await prisma.subCategory.create({
@@ -111,10 +111,10 @@ const createSubCategory = async (req: Request, res: Response) => {
         message: "Product createSubCategory successfully",
         data: sub,
     });
-};
+})
 
 //==============  GET ALL SUBCATEGORY ===================//
- const getAllSubCategories = async (req: Request, res: Response) => {
+const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
     const sub = await prisma.subCategory.findMany();
     sendResponse(res, {
         statusCode: StatusCodes.OK,
@@ -122,7 +122,32 @@ const createSubCategory = async (req: Request, res: Response) => {
         message: "Product getAllSubCategories successfully",
         data: sub,
     });
-};
+});
+
+const deleteCategory = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await prisma.category.delete({
+        where: { id : id as string },
+    });
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product Category deleted successfully",
+        data: null,
+    });
+});
+const deleteSubCategory = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await prisma.subCategory.delete({
+        where: { id : id as string },
+    });
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Product SubCategory deleted successfully",
+        data: null,
+    });
+});
 
 export const ProductController = {
     createProduct,
@@ -133,7 +158,9 @@ export const ProductController = {
     createCategory,
     getAllCategories,
     createSubCategory,
-    getAllSubCategories
+    getAllSubCategories,
+    deleteCategory,
+    deleteSubCategory
 };
 
 

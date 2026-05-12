@@ -27,7 +27,7 @@ model Product {
     images                ProductImage[]
     tags                  Tag[]
     additionalInformation AdditionalInfo[]
-    discounts Discount[] 
+    discount Discount?
     @@map("products")
 }
 

@@ -70,6 +70,8 @@ router.patch("/:productId", (req, res, next) => {
 //=============== category and subcategory ======================// 
 router.post("/create-category", product_controller_1.ProductController.createCategory);
 router.get("/category", product_controller_1.ProductController.getAllCategories);
+router.delete("/category/:id", product_controller_1.ProductController.deleteCategory);
 router.post("/create-sub-category", product_controller_1.ProductController.createSubCategory);
 router.get("/sub-category", product_controller_1.ProductController.getAllSubCategories);
+router.delete("/sub-category/:id", product_controller_1.ProductController.deleteSubCategory);
 exports.ProductRoutes = router;
