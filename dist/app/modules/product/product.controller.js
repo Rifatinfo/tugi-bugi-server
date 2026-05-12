@@ -96,7 +96,7 @@ const getAllCategories = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         data: categories,
     });
 }));
-const createSubCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createSubCategory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name } = req.body;
     const sub = yield prisma_1.default.subCategory.create({
         data: { name },
@@ -107,9 +107,9 @@ const createSubCategory = (req, res) => __awaiter(void 0, void 0, void 0, functi
         message: "Product createSubCategory successfully",
         data: sub,
     });
-});
+}));
 //==============  GET ALL SUBCATEGORY ===================//
-const getAllSubCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllSubCategories = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const sub = yield prisma_1.default.subCategory.findMany();
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -117,7 +117,31 @@ const getAllSubCategories = (req, res) => __awaiter(void 0, void 0, void 0, func
         message: "Product getAllSubCategories successfully",
         data: sub,
     });
-});
+}));
+const deleteCategory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    yield prisma_1.default.category.delete({
+        where: { id: id },
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product Category deleted successfully",
+        data: null,
+    });
+}));
+const deleteSubCategory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    yield prisma_1.default.subCategory.delete({
+        where: { id: id },
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Product SubCategory deleted successfully",
+        data: null,
+    });
+}));
 exports.ProductController = {
     createProduct,
     getAllProduct,
@@ -127,5 +151,7 @@ exports.ProductController = {
     createCategory,
     getAllCategories,
     createSubCategory,
-    getAllSubCategories
+    getAllSubCategories,
+    deleteCategory,
+    deleteSubCategory
 };

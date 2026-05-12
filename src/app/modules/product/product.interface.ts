@@ -18,4 +18,6 @@ export interface CreateProductInput {
     images?: string[];
     tags?: string[];
     additionalInformation?: Array<{ label: string; value: string }>;
-}
+
+    
+};
