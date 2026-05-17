@@ -28,3 +28,35 @@ enum DiscountType {
   PERCENTAGE 
   FIXED 
 }
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  FAILED
+  EXPIRED
+
+  PLACED       // frontend only
+  PROCESSING   // frontend only
+  SHIPPED
+  DELIVERED
+}
+
+// ========= Payment Related ========//
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum DeliveryType {
+  INSIDE_DHAKA
+  OUTSIDE_DHAKA
+}

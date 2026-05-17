@@ -12,3 +12,5 @@ export const productFilterableFields = [
   "color",
   "stockStatus",
 ];
+
+

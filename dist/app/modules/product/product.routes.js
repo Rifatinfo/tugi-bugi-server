@@ -43,7 +43,7 @@ router.post("/create", (req, res, next) => {
 router.get("/", product_controller_1.ProductController.getAllProduct);
 router.get("/slug/:slug", product_controller_1.ProductController.getProductBySlug);
 router.delete("/:productId", product_controller_1.ProductController.deleteProduct);
-router.patch("/:productId", (req, res, next) => {
+router.patch("/:slug", (req, res, next) => {
     productUpload(req, res, (err) => {
         var _a, _b;
         if (err)
