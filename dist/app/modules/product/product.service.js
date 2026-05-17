@@ -32,7 +32,6 @@ const product_constant_1 = require("./product.constant");
 const ApiError_1 = __importDefault(require("../../errors/ApiError"));
 const http_status_codes_1 = require("http-status-codes");
 const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     const data = req.body;
     console.log("Data : ", data);
     // ============= generate slug automatically ================//
@@ -52,12 +51,17 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
         files.forEach((file) => imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(file, productFolder)));
     const filenames = yield Promise.all(imagePromises);
     let idx = 0;
-    //=================== Process images =======================// 
-    const thumbnailUrl = thumbnailFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
-    const sizeGuidUrl = sizeGuidFile ? `/uploads/${productFolder}/${filenames[idx++]}` : null;
-    const imageUrls = (files === null || files === void 0 ? void 0 : files.length) ? filenames.slice(idx).map(f => `/uploads/${productFolder}/${f}`) : [];
+    //=================== Process images =======================//
+    const thumbnailUrl = thumbnailFile
+        ? `/uploads/${productFolder}/${filenames[idx++]}`
+        : null;
+    const sizeGuidUrl = sizeGuidFile
+        ? `/uploads/${productFolder}/${filenames[idx++]}`
+        : null;
+    const imageUrls = (files === null || files === void 0 ? void 0 : files.length)
+        ? filenames.slice(idx).map((f) => `/uploads/${productFolder}/${f}`)
+        : [];
     // ===== Process discounts =====
-    const discountData = (_a = data.discount) === null || _a === void 0 ? void 0 : _a[0];
     return prisma_1.default.product.create({
         data: {
             name: data.name,
@@ -151,12 +155,6 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
                     })),
                 }
                 : undefined,
-            // ====== One-to-One Discount ======
-            discount: discountData && discountData.value > 0
-                ? {
-                    create: Object.assign(Object.assign({ type: discountData.type, value: Number(discountData.value), isActive: true }, (discountData.startDate ? { startDate: new Date(discountData.startDate) } : {})), (discountData.endDate ? { endDate: new Date(discountData.endDate) } : {})),
-                }
-                : undefined,
         },
         include: {
             categories: true,
@@ -166,21 +164,21 @@ const createProduct = (req) => __awaiter(void 0, void 0, void 0, function* () {
             additionalInformation: true,
             tags: true,
             discount: true,
-        }
+        },
     });
 });
 const getProducts = (params, options) => __awaiter(void 0, void 0, void 0, function* () {
     const { page, limit, skip, sortBy, sortOrder } = paginationHelper_1.paginationHelper.calculatePagination(options);
-    const { searchTerm, category, subCategory } = params, filterData = __rest(params, ["searchTerm", "category", "subCategory"]);
+    const { searchTerm, category, subCategory, priceRange, color } = params, filterData = __rest(params, ["searchTerm", "category", "subCategory", "priceRange", "color"]);
     const andConditions = [];
     if (searchTerm) {
         andConditions.push({
-            OR: product_constant_1.productSearchableFields.map(field => ({
+            OR: product_constant_1.productSearchableFields.map((field) => ({
                 [field]: {
                     contains: searchTerm,
-                    mode: "insensitive"
-                }
-            }))
+                    mode: "insensitive",
+                },
+            })),
         });
     }
     if (category) {
@@ -201,31 +199,68 @@ const getProducts = (params, options) => __awaiter(void 0, void 0, void 0, funct
             },
         });
     }
+    if (priceRange) {
+        const [min, max] = priceRange.split("-").map(Number);
+        andConditions.push({
+            OR: [
+                {
+                    salePrice: {
+                        gte: min,
+                        lte: max,
+                    },
+                },
+                {
+                    regularPrice: {
+                        gte: min,
+                        lte: max,
+                    },
+                },
+            ],
+        });
+    }
+    if (color) {
+        andConditions.push({
+            variants: {
+                some: {
+                    color: {
+                        equals: color,
+                        mode: "insensitive",
+                    },
+                },
+            },
+        });
+    }
     if (Object.keys(filterData).length > 0) {
         andConditions.push({
-            AND: Object.keys(filterData).map(key => ({
+            AND: Object.keys(filterData).map((key) => ({
                 [key]: {
-                    equals: filterData[key]
-                }
-            }))
+                    equals: filterData[key],
+                },
+            })),
         });
     }
     const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
     const result = yield prisma_1.default.product.findMany({
         skip,
         take: limit,
-        orderBy: {
-            [sortBy]: sortOrder
-        },
+        orderBy: sortBy ? { [sortBy]: sortOrder || "desc" } : { createdAt: "desc" },
         where: whereCondition,
         include: {
-            categories: true,
-            subCategories: true,
+            categories: {
+                include: {
+                    category: true,
+                },
+            },
+            subCategories: {
+                include: {
+                    subCategory: true,
+                },
+            },
             variants: true,
             images: true,
             additionalInformation: true,
             tags: true,
-        }
+        },
     });
     const total = yield prisma_1.default.product.count({ where: whereCondition });
     return {
@@ -274,61 +309,242 @@ const deleteProduct = (productId) => __awaiter(void 0, void 0, void 0, function*
     });
     return deletedProduct;
 });
-const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, function* () {
+// const updateProduct = async (
+//     slug: string,
+//     req: ExpressRequest & { files?: Express.Multer.File[] }
+// ) => {
+//     const data = req.body as Partial<CreateProductInput>;
+//     // 1. Find product by slug
+//     const existingProduct = await prisma.product.findUnique({
+//         where: { slug },
+//         include: { images: true },
+//     });
+//     if (!existingProduct) {
+//         throw new ApiError(StatusCodes.NOT_FOUND, "Product not found");
+//     }
+//     const productFolder = `products/${slug}`;
+//     // 2. Handle files
+//     const files = (req as any).galleryFiles;
+//     const thumbnailFile = (req as any).thumbnailImage;
+//     const sizeGuidFile = (req as any).sizeGuidImage;
+//     const imagePromises: Promise<string>[] = [];
+//     if (thumbnailFile)
+//         imagePromises.push(optimizeAndSaveImage(thumbnailFile, productFolder));
+//     if (sizeGuidFile)
+//         imagePromises.push(optimizeAndSaveImage(sizeGuidFile, productFolder));
+//     if (files?.length)
+//         files.forEach((file: any) =>
+//             imagePromises.push(optimizeAndSaveImage(file, productFolder))
+//         );
+//     const filenames = await Promise.all(imagePromises);
+//     let idx = 0;
+//     const thumbnailUrl = thumbnailFile
+//         ? `/uploads/${productFolder}/${filenames[idx++]}`
+//         : existingProduct.thumbnailImage;
+//     const sizeGuidUrl = sizeGuidFile
+//         ? `/uploads/${productFolder}/${filenames[idx++]}`
+//         : existingProduct.sizeGuidImage;
+//     const newGalleryUrls = files?.length
+//         ? filenames.slice(idx).map((f) => `/uploads/${productFolder}/${f}`)
+//         : [];
+//     // 3. Delete old relations (FIXED)
+//     await Promise.all([
+//         prisma.productCategory.deleteMany({
+//             where: { productId: existingProduct.id },
+//         }),
+//         prisma.productSubCategory.deleteMany({
+//             where: { productId: existingProduct.id },
+//         }),
+//         prisma.variant.deleteMany({
+//             where: { productId: existingProduct.id },
+//         }),
+//         prisma.additionalInfo.deleteMany({
+//             where: { productId: existingProduct.id },
+//         }),
+//         prisma.productImage.deleteMany({
+//             where: { productId: existingProduct.id },
+//         }),
+//     ]);
+//     // 4. Update product
+//     const updatedProduct = await prisma.product.update({
+//         where: { slug }, //  FIXED
+//         data: {
+//             name: data.name ?? existingProduct.name,
+//             sku: data.sku ?? existingProduct.sku,
+//             regularPrice: data.regularPrice ?? existingProduct.regularPrice,
+//             salePrice: data.salePrice ?? existingProduct.salePrice,
+//             stockQuantity:
+//                 data.stockQuantity ?? existingProduct.stockQuantity,
+//             stockStatus: data.stockStatus ?? existingProduct.stockStatus,
+//             shortDescription:
+//                 data.shortDescription ?? existingProduct.shortDescription,
+//             fullDescription:
+//                 data.fullDescription ?? existingProduct.fullDescription,
+//             thumbnailImage: thumbnailUrl,
+//             sizeGuidImage: sizeGuidUrl,
+//             // Images
+//             images: newGalleryUrls.length
+//                 ? {
+//                     create: newGalleryUrls.map((url) => ({ url })),
+//                 }
+//                 : undefined,
+//             // Categories
+//             categories: data.categories
+//                 ? {
+//                     create: data.categories.map((category) => ({
+//                         category: {
+//                             connectOrCreate: {
+//                                 where: { id: category },
+//                                 create: { id: category, name: category },
+//                             },
+//                         },
+//                     })),
+//                 }
+//                 : undefined,
+//             // SubCategories
+//             subCategories: data.subCategories
+//                 ? {
+//                     create: data.subCategories.map((subCategory) => {
+//                         if (typeof subCategory === "string") {
+//                             return {
+//                                 subCategory: {
+//                                     connectOrCreate: {
+//                                         where: { id: subCategory },
+//                                         create: {
+//                                             id: subCategory,
+//                                             name: subCategory,
+//                                         },
+//                                     },
+//                                 },
+//                             };
+//                         } else {
+//                             return {
+//                                 subCategory: {
+//                                     connectOrCreate: {
+//                                         where: { id: subCategory.id },
+//                                         create: {
+//                                             id: subCategory.id,
+//                                             name: subCategory.name,
+//                                             parentId:
+//                                                 subCategory.parentId ||
+//                                                 null,
+//                                         },
+//                                     },
+//                                 },
+//                             };
+//                         }
+//                     }),
+//                 }
+//                 : undefined,
+//             // Variants
+//             variants: data.variants
+//                 ? {
+//                     create: data.variants.map((variant) => ({
+//                         color: variant.color,
+//                         size: variant.size,
+//                         quantity: variant.quantity ?? 0,
+//                     })),
+//                 }
+//                 : undefined,
+//             // Tags
+//             tags: data.tags
+//                 ? {
+//                     set: [],
+//                     connectOrCreate: data.tags.map((tagName) => ({
+//                         where: { name: tagName },
+//                         create: { name: tagName },
+//                     })),
+//                 }
+//                 : undefined,
+//             // Additional Info
+//             additionalInformation: data.additionalInformation
+//                 ? {
+//                     create: data.additionalInformation.map((info) => ({
+//                         label: info.label,
+//                         value: info.value,
+//                     })),
+//                 }
+//                 : undefined,
+//         },
+//         include: {
+//             categories: true,
+//             subCategories: true,
+//             variants: true,
+//             images: true,
+//             additionalInformation: true,
+//             tags: true,
+//         },
+//     });
+//     return updatedProduct;
+// };
+const updateProduct = (slug, req) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const data = req.body;
-    // 1️ Check existing product
+    // 1. Find existing product
     const existingProduct = yield prisma_1.default.product.findUnique({
-        where: { id: productId },
+        where: { slug },
         include: { images: true },
     });
     if (!existingProduct) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "Product not found");
     }
-    // 2️ Generate new slug if name changed
-    let slug = existingProduct.slug;
-    if (data.name && data.name !== existingProduct.name) {
-        slug = yield (0, generateSlug_1.generateUniqueSlug)(data.name);
-    }
     const productFolder = `products/${slug}`;
-    // 3️ Process images outside DB
+    // 2. Files from request
     const files = req.galleryFiles;
     const thumbnailFile = req.thumbnailImage;
     const sizeGuidFile = req.sizeGuidImage;
     const imagePromises = [];
-    if (thumbnailFile)
+    if (thumbnailFile) {
         imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(thumbnailFile, productFolder));
-    if (sizeGuidFile)
+    }
+    if (sizeGuidFile) {
         imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(sizeGuidFile, productFolder));
-    if (files === null || files === void 0 ? void 0 : files.length)
-        files.forEach((file) => imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(file, productFolder)));
+    }
+    if (files === null || files === void 0 ? void 0 : files.length) {
+        files.forEach((file) => {
+            imagePromises.push((0, imageOptimizer_1.optimizeAndSaveImage)(file, productFolder));
+        });
+    }
     const filenames = yield Promise.all(imagePromises);
     let idx = 0;
+    // 3. Thumbnail & Size Guide (keep old if not updated)
     const thumbnailUrl = thumbnailFile
         ? `/uploads/${productFolder}/${filenames[idx++]}`
         : existingProduct.thumbnailImage;
     const sizeGuidUrl = sizeGuidFile
         ? `/uploads/${productFolder}/${filenames[idx++]}`
         : existingProduct.sizeGuidImage;
+    // 4. Existing images (keep from DB)
+    const existingGalleryUrls = existingProduct.images.map((img) => img.url);
+    // 5. New uploaded images
     const newGalleryUrls = (files === null || files === void 0 ? void 0 : files.length)
         ? filenames.slice(idx).map((f) => `/uploads/${productFolder}/${f}`)
         : [];
-    // 4️ Delete old relations before update
+    // 6. Combined (copy of both)
+    const allGalleryUrls = [...existingGalleryUrls, ...newGalleryUrls];
+    console.log("allGalleryUrls", allGalleryUrls);
+    console.log("newGalleryUrls", newGalleryUrls);
+    console.log("files", files);
+    // 6. DELETE ONLY RELATIONS (NOT IMAGES)
     yield Promise.all([
-        prisma_1.default.productCategory.deleteMany({ where: { productId } }),
-        prisma_1.default.productSubCategory.deleteMany({ where: { productId } }),
-        prisma_1.default.variant.deleteMany({ where: { productId } }),
-        prisma_1.default.additionalInfo.deleteMany({ where: { productId } }),
-        newGalleryUrls.length
-            ? prisma_1.default.productImage.deleteMany({ where: { productId } })
-            : Promise.resolve(),
+        prisma_1.default.productCategory.deleteMany({
+            where: { productId: existingProduct.id },
+        }),
+        prisma_1.default.productSubCategory.deleteMany({
+            where: { productId: existingProduct.id },
+        }),
+        prisma_1.default.variant.deleteMany({
+            where: { productId: existingProduct.id },
+        }),
+        prisma_1.default.additionalInfo.deleteMany({
+            where: { productId: existingProduct.id },
+        }),
     ]);
-    // 5️ Update product with new data
+    // 7. UPDATE PRODUCT
     const updatedProduct = yield prisma_1.default.product.update({
-        where: { id: productId },
+        where: { slug },
         data: {
             name: (_a = data.name) !== null && _a !== void 0 ? _a : existingProduct.name,
-            slug,
             sku: (_b = data.sku) !== null && _b !== void 0 ? _b : existingProduct.sku,
             regularPrice: (_c = data.regularPrice) !== null && _c !== void 0 ? _c : existingProduct.regularPrice,
             salePrice: (_d = data.salePrice) !== null && _d !== void 0 ? _d : existingProduct.salePrice,
@@ -338,10 +554,12 @@ const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, func
             fullDescription: (_h = data.fullDescription) !== null && _h !== void 0 ? _h : existingProduct.fullDescription,
             thumbnailImage: thumbnailUrl,
             sizeGuidImage: sizeGuidUrl,
-            // Images
-            images: newGalleryUrls.length
+            //  ADD NEW IMAGES ONLY (old stay in DB)
+            images: allGalleryUrls.length
                 ? {
-                    create: newGalleryUrls.map((url) => ({ url })),
+                    create: newGalleryUrls.map((url) => ({
+                        url,
+                    })),
                 }
                 : undefined,
             // Categories
@@ -351,7 +569,10 @@ const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, func
                         category: {
                             connectOrCreate: {
                                 where: { id: category },
-                                create: { id: category, name: category },
+                                create: {
+                                    id: category,
+                                    name: category,
+                                },
                             },
                         },
                     })),
@@ -365,26 +586,31 @@ const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, func
                             return {
                                 subCategory: {
                                     connectOrCreate: {
-                                        where: { id: subCategory },
-                                        create: { id: subCategory, name: subCategory },
-                                    },
-                                },
-                            };
-                        }
-                        else {
-                            return {
-                                subCategory: {
-                                    connectOrCreate: {
-                                        where: { id: subCategory.id },
+                                        where: {
+                                            id: subCategory,
+                                        },
                                         create: {
-                                            id: subCategory.id,
-                                            name: subCategory.name,
-                                            parentId: subCategory.parentId || null,
+                                            id: subCategory,
+                                            name: subCategory,
                                         },
                                     },
                                 },
                             };
                         }
+                        return {
+                            subCategory: {
+                                connectOrCreate: {
+                                    where: {
+                                        id: subCategory.id,
+                                    },
+                                    create: {
+                                        id: subCategory.id,
+                                        name: subCategory.name,
+                                        parentId: subCategory.parentId || null,
+                                    },
+                                },
+                            },
+                        };
                     }),
                 }
                 : undefined,
@@ -404,7 +630,7 @@ const updateProduct = (productId, req) => __awaiter(void 0, void 0, void 0, func
             // Tags
             tags: data.tags
                 ? {
-                    set: [], // reset old
+                    set: [],
                     connectOrCreate: data.tags.map((tagName) => ({
                         where: { name: tagName },
                         create: { name: tagName },
@@ -437,5 +663,5 @@ exports.ProductService = {
     getProducts,
     getProductBySlug,
     deleteProduct,
-    updateProduct
+    updateProduct,
 };

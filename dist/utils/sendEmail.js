@@ -26,35 +26,54 @@ const transporter = nodemailer_1.default.createTransport({
         pass: config_1.envVars.SMTP_PASS,
     },
     tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+    },
+});
+// async verify (better practice)
+transporter.verify((error, success) => {
+    if (error) {
+        console.error("❌ SMTP connection failed:", error);
+    }
+    else {
+        console.log("✅ SMTP Server is ready");
     }
 });
-transporter.verify();
-console.log("✅ SMTP Server is ready");
-const sendEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, subject, templateName, templateData, html, attachments }) {
+const sendEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, subject, html, templateName, templateData, attachments, }) {
     try {
-        let finalHtml = html;
-        // 👉 If templateName exists → use EJS file
+        let finalHtml = "";
+        /**
+         * 1️⃣ If templateName exists → use EJS FILE
+         */
         if (templateName) {
             const templatePath = path_1.default.join(process.cwd(), "templates", `${templateName}.ejs`);
-            console.log("Template path:", templatePath);
-            finalHtml = yield ejs_1.default.renderFile(templatePath, templateData);
+            finalHtml = yield ejs_1.default.renderFile(templatePath, templateData || {});
         }
-        // 👉 If NO templateName but html exists → render dynamic variables inline
+        /**
+         * 2️⃣ If NO template file → use direct HTML
+         *    (this is your main requirement)
+         */
         else if (html) {
-            finalHtml = ejs_1.default.render(html, templateData); //  MAGIC LINE
+            finalHtml = templateData
+                ? ejs_1.default.render(html, templateData) // supports variables like {{name}}
+                : html; // pure HTML, no processing
         }
+        /**
+         * 3️⃣ Validation
+         */
         if (!finalHtml) {
-            throw new Error("No email content provided");
+            throw new Error("No email content provided (html or template required)");
         }
+        /**
+         * 4️⃣ Send Email
+         */
         const info = yield transporter.sendMail({
             from: config_1.envVars.SMTP_FROM,
             to,
             subject,
             html: finalHtml,
-            attachments
+            attachments,
         });
-        console.log(`📧 Email sent to ${to}: ${info.messageId}`);
+        console.log(`📧 Email sent successfully to ${to}: ${info.messageId}`);
         return true;
     }
     catch (error) {

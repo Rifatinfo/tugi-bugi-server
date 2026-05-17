@@ -65,8 +65,8 @@ const deleteProduct = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     });
 }));
 const updateProduct = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { productId } = req.params;
-    const result = yield product_service_1.ProductService.updateProduct(productId, req);
+    const { slug } = req.params;
+    const result = yield product_service_1.ProductService.updateProduct(slug, req);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,

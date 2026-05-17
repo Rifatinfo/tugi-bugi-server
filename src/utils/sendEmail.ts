@@ -12,19 +12,31 @@ const transporter = nodemailer.createTransport({
         pass: envVars.SMTP_PASS,
     },
     tls: {
-        rejectUnauthorized: false
-    }
+        rejectUnauthorized: false,
+    },
 });
 
-transporter.verify();
-console.log("✅ SMTP Server is ready");
+// async verify (better practice)
+transporter.verify((error, success) => {
+    if (error) {
+        console.error("❌ SMTP connection failed:", error);
+    } else {
+        console.log("✅ SMTP Server is ready");
+    }
+});
 
 interface SendEmailOptions {
     to: string;
     subject: string;
-    templateName?: string;   // optional now
+
+    // OPTION 1: direct HTML string (recommended)
+    html?: string;
+
+    // OPTION 2: EJS template file (optional)
+    templateName?: string;
     templateData?: Record<string, any>;
-    html?: string;           // 👈 direct HTML support
+
+    // PDF / files (invoice support)
     attachments?: {
         filename: string;
         content: Buffer | string;
@@ -35,42 +47,57 @@ interface SendEmailOptions {
 export const sendEmail = async ({
     to,
     subject,
+    html,
     templateName,
     templateData,
-    html,
-    attachments
+    attachments,
 }: SendEmailOptions) => {
     try {
-        let finalHtml = html;
+        let finalHtml = "";
 
-        // 👉 If templateName exists → use EJS file
+        /**
+         * 1️⃣ If templateName exists → use EJS FILE
+         */
         if (templateName) {
-            const templatePath = path.join(process.cwd(), "templates", `${templateName}.ejs`);
-            console.log("Template path:", templatePath);
+            const templatePath = path.join(
+                process.cwd(),
+                "templates",
+                `${templateName}.ejs`
+            );
 
-            finalHtml = await ejs.renderFile(templatePath, templateData);
+            finalHtml = await ejs.renderFile(templatePath, templateData || {});
         }
 
-        // 👉 If NO templateName but html exists → render dynamic variables inline
+        /**
+         * 2️⃣ If NO template file → use direct HTML
+         *    (this is your main requirement)
+         */
         else if (html) {
-            finalHtml = ejs.render(html, templateData); //  MAGIC LINE
+            finalHtml = templateData
+                ? ejs.render(html, templateData) // supports variables like {{name}}
+                : html; // pure HTML, no processing
         }
 
+        /**
+         * 3️⃣ Validation
+         */
         if (!finalHtml) {
-            throw new Error("No email content provided");
+            throw new Error("No email content provided (html or template required)");
         }
 
+        /**
+         * 4️⃣ Send Email
+         */
         const info = await transporter.sendMail({
             from: envVars.SMTP_FROM,
             to,
             subject,
             html: finalHtml,
-            attachments
+            attachments,
         });
 
-        console.log(`📧 Email sent to ${to}: ${info.messageId}`);
+        console.log(`📧 Email sent successfully to ${to}: ${info.messageId}`);
         return true;
-
     } catch (error) {
         console.error("❌ Email send failed:", error);
         return false;

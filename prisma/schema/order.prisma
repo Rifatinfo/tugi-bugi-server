@@ -1,0 +1,57 @@
+model Order {
+  id String @id @default(cuid())
+
+  userId String?        // optional for guest users
+  user   User?          @relation(fields: [userId], references: [id])
+
+  name    String
+  state   String
+  phone   String
+  address String
+  
+  checkoutEmail String?
+
+  subtotal    Float
+  totalAmount Float
+  
+  invoiceUrl String?
+
+  orderStatus   OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentMethod PaymentMethod
+
+  deliveryCharge Decimal?
+  deliveryType   DeliveryType?
+  items   OrderItem[]
+  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+
+  productName String
+  price       Float
+  quantity    Int
+  total       Float
+
+  color     String?
+  size      String?
+  sku        String? 
+  variantId String?
+  productImage String?
+  
+  // Relations
+  variant   Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  product   Product  @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
