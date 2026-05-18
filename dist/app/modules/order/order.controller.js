@@ -17,6 +17,9 @@ const catchAsync_1 = __importDefault(require("../../../shared/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../shared/sendResponse"));
 const http_status_codes_1 = require("http-status-codes");
 const order_service_1 = require("./order.service");
+const pick_1 = __importDefault(require("../../../shared/pick"));
+const order_constant_1 = require("./order.constant");
+const ApiError_1 = __importDefault(require("../../errors/ApiError"));
 const createOrderController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -33,6 +36,46 @@ const createOrderController = (0, catchAsync_1.default)((req, res) => __awaiter(
         data: order,
     });
 }));
+//=================== all order controllers can be added here =================//
+const getAllOrdersController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const filters = (0, pick_1.default)(req.query, order_constant_1.orderFilterableFields);
+    const options = (0, pick_1.default)(req.query, ["page", "limit", "sortBy", "sortOrder"]);
+    const result = yield order_service_1.orderService.getAllOrdersService(filters, options);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: "Orders fetched successfully",
+        meta: result.meta,
+        data: result.data,
+    });
+}));
+const updateOrderStatusController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    if (!status) {
+        throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Status is required");
+    }
+    const result = yield order_service_1.orderService.updateOrderStatusService(orderId, status);
+    (0, sendResponse_1.default)(res, {
+        statusCode: 200,
+        success: true,
+        message: "Order status updated",
+        data: result,
+    });
+}));
+const getOrderTrackingController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId } = req.params;
+    const result = yield order_service_1.orderService.getOrderTrackingService(orderId, req.user.id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: 200,
+        success: true,
+        message: "Order tracking fetched",
+        data: result,
+    });
+}));
 exports.OrderController = {
-    createOrderController
+    createOrderController,
+    getAllOrdersController,
+    updateOrderStatusController,
+    getOrderTrackingController,
 };
