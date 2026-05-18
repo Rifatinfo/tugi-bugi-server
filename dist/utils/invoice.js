@@ -34,25 +34,25 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
     });
     doc.pipe(stream);
     /* =========================
-        COLORS
+        COLORS (Premium Design)
     ========================== */
     const colors = {
-        black: "#000000",
-        dark: "#111111",
-        text: "#333333",
-        gray: "#666666",
-        lightGray: "#f5f5f5",
-        border: "#dddddd",
-        white: "#ffffff",
-        success: "#16a34a",
-        danger: "#dc2626",
+        black: "#111111",
+        dark: "#1A1A1A",
+        text: "#2D2D2D",
+        muted: "#6B7280",
+        border: "#E5E7EB",
+        white: "#FFFFFF",
+        primary: "#0F172A", // deep navy
+        accent: "#C8A96A", // luxury gold
+        soft: "#FAFAF8", // warm white
+        success: "#16A34A",
+        danger: "#DC2626",
     };
     /* =========================
         TOP LINE
     ========================== */
-    doc
-        .rect(0, 0, 595, 6)
-        .fill(colors.black);
+    doc.rect(0, 0, 595, 6).fill(colors.primary);
     /* =========================
         LOGO
     ========================== */
@@ -66,138 +66,187 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
         COMPANY INFO
     ========================== */
     doc
-        .fontSize(20)
+        .fontSize(22)
         .font("Helvetica-Bold")
-        .fillColor(colors.black)
+        .fillColor(colors.primary)
         .text("Tuki Buki", 50, 135);
     doc
-        .fontSize(9)
+        .fontSize(10)
         .font("Helvetica")
-        .fillColor(colors.gray)
-        .text("89/1 Holan, Dakshinkhan", 50, 160)
-        .text("Dhaka, Bangladesh", 50, 174);
+        .fillColor(colors.muted)
+        .text("89/1 Holan, Dakshinkhan", 50, 165)
+        .text("Dhaka, Bangladesh", 50, 180);
     /* =========================
         INVOICE TITLE
     ========================== */
     doc
-        .fontSize(30)
+        .fontSize(34)
         .font("Helvetica-Bold")
-        .fillColor(colors.black)
-        .text("INVOICE", 370, 35, {
+        .fillColor(colors.primary)
+        .text("INVOICE", 360, 40, {
         align: "right",
-        width: 170,
+        width: 180,
     });
     /* =========================
-        INVOICE BOX
+        INVOICE META BOX
     ========================== */
-    const metaY = 85;
+    // const metaY = 90;
+    // doc
+    //   .roundedRect(360, metaY, 185, 95, 8)
+    //   .lineWidth(1)
+    //   .strokeColor(colors.accent)
+    //   .stroke();
+    // doc
+    //   .fontSize(10)
+    //   .font("Helvetica-Bold")
+    //   .fillColor(colors.muted)
+    //   .text("Invoice Number", 375, metaY + 15);
+    // doc
+    //   .fontSize(13)
+    //   .font("Helvetica-Bold")
+    //   .fillColor(colors.black)
+    //   .text(`#${order.orderSerial}`, 375, metaY + 35);
+    // doc
+    //   .moveTo(375, metaY + 58)
+    //   .lineTo(525, metaY + 58)
+    //   .strokeColor(colors.accent)
+    //   .lineWidth(0.8)
+    //   .stroke();
+    // doc
+    //   .fontSize(10)
+    //   .font("Helvetica-Bold")
+    //   .fillColor(colors.muted)
+    //   .text("Invoice Date", 375, metaY + 68);
+    // doc
+    //   .fontSize(12)
+    //   .font("Helvetica")
+    //   .fillColor(colors.black)
+    //   .text(
+    //     order.createdAt.toLocaleDateString("en-US", {
+    //       year: "numeric",
+    //       month: "long",
+    //       day: "numeric",
+    //     }),
+    //     375,
+    //     metaY + 85
+    //   );
+    /* =========================
+        INVOICE META BOX
+    ========================== */
+    const metaY = 90;
+    // Increased box height from 95 → 115
     doc
-        .roundedRect(360, metaY, 185, 75, 6)
+        .roundedRect(360, metaY, 185, 115, 8)
         .lineWidth(1)
-        .strokeColor(colors.border)
+        .strokeColor(colors.accent)
         .stroke();
     doc
-        .fontSize(9)
+        .fontSize(10)
         .font("Helvetica-Bold")
-        .fillColor(colors.gray)
-        .text("Invoice Number", 375, metaY + 12);
+        .fillColor(colors.muted)
+        .text("Invoice Number", 375, metaY + 15);
     doc
-        .fontSize(11)
-        .font("Helvetica")
+        .fontSize(13)
+        .font("Helvetica-Bold")
         .fillColor(colors.black)
-        .text(`#${order.orderSerial}`, 375, metaY + 28);
+        .text(`#${order.orderSerial}`, 375, metaY + 35);
     doc
-        .moveTo(375, metaY + 46)
-        .lineTo(525, metaY + 46)
-        .strokeColor(colors.border)
+        .moveTo(375, metaY + 58)
+        .lineTo(525, metaY + 58)
+        .strokeColor(colors.accent)
+        .lineWidth(0.8)
         .stroke();
     doc
-        .fontSize(9)
+        .fontSize(10)
         .font("Helvetica-Bold")
-        .fillColor(colors.gray)
-        .text("Invoice Date", 375, metaY + 54);
+        .fillColor(colors.muted)
+        .text("Invoice Date", 375, metaY + 68);
+    // moved text slightly upward and added proper bottom spacing
     doc
-        .fontSize(11)
+        .fontSize(12)
         .font("Helvetica")
         .fillColor(colors.black)
         .text(order.createdAt.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
-    }), 375, metaY + 68);
+    }), 375, metaY + 83, {
+        width: 150,
+        align: "left",
+    });
     /* =========================
         BILL TO
     ========================== */
-    const billY = 235;
+    const billY = 250;
     doc
-        .fontSize(11)
+        .fontSize(13)
         .font("Helvetica-Bold")
-        .fillColor(colors.black)
+        .fillColor(colors.primary)
         .text("BILL TO", 50, billY);
     doc
-        .moveTo(50, billY + 18)
-        .lineTo(115, billY + 18)
-        .lineWidth(1.5)
-        .strokeColor(colors.black)
+        .moveTo(50, billY + 22)
+        .lineTo(120, billY + 22)
+        .strokeColor(colors.accent)
+        .lineWidth(2)
         .stroke();
     doc
-        .fontSize(12)
+        .fontSize(14)
         .font("Helvetica-Bold")
         .fillColor(colors.black)
-        .text(order.name, 50, billY + 32);
+        .text(order.name, 50, billY + 38);
     doc
-        .fontSize(9)
+        .fontSize(10)
         .font("Helvetica")
         .fillColor(colors.text)
-        .text(order.address, 50, billY + 50, {
+        .text(order.address, 50, billY + 62, {
         width: 250,
     })
-        .text(order.state, 50, billY + 65)
-        .text(order.phone, 50, billY + 80);
+        .text(order.state, 50, billY + 80)
+        .text(order.phone, 50, billY + 98);
     if (order.checkoutEmail) {
-        doc.text(order.checkoutEmail, 50, billY + 95);
+        doc.text(order.checkoutEmail, 50, billY + 116);
     }
     /* =========================
-        TABLE
+        PRODUCT TABLE
     ========================== */
-    const tableTop = 390;
-    // Header background black
+    const tableTop = 410;
+    // Header
     doc
-        .rect(50, tableTop, 495, 28)
-        .fill(colors.black);
-    // Headers
+        .roundedRect(50, tableTop, 495, 32, 4)
+        .fill(colors.primary);
     doc
         .fontSize(10)
         .font("Helvetica-Bold")
         .fillColor(colors.white)
-        .text("PRODUCT", 60, tableTop + 9)
-        .text("QTY", 290, tableTop + 9, {
+        .text("PRODUCT", 65, tableTop + 11)
+        .text("QTY", 290, tableTop + 11, {
         width: 40,
         align: "center",
     })
-        .text("PRICE", 350, tableTop + 9, {
+        .text("PRICE", 360, tableTop + 11, {
         width: 80,
         align: "right",
     })
-        .text("TOTAL", 460, tableTop + 9, {
+        .text("TOTAL", 460, tableTop + 11, {
         width: 75,
         align: "right",
     });
-    let y = tableTop + 40;
-    order.items.forEach((item, index) => {
-        // Alternate row bg
-        if (index % 2 === 0) {
-            doc
-                .rect(50, y - 8, 495, 36)
-                .fill(colors.lightGray);
-        }
-        // Product
+    let y = tableTop + 45;
+    order.items.forEach((item) => {
+        // Row divider
+        doc
+            .moveTo(50, y + 30)
+            .lineTo(545, y + 30)
+            .strokeColor(colors.border)
+            .lineWidth(1)
+            .stroke();
+        // Product name
         doc
             .fontSize(10)
             .font("Helvetica-Bold")
             .fillColor(colors.black)
             .text(item.productName, 60, y);
-        // Variants
+        // Variant
         const variant = [
             item.color ? `Color: ${item.color}` : "",
             item.size ? `Size: ${item.size}` : "",
@@ -209,10 +258,10 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
             doc
                 .fontSize(8)
                 .font("Helvetica")
-                .fillColor(colors.gray)
-                .text(variant, 60, y + 14);
+                .fillColor(colors.muted)
+                .text(variant, 60, y + 15);
         }
-        // Quantity
+        // Qty
         doc
             .fontSize(10)
             .font("Helvetica")
@@ -229,27 +278,21 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
         // Total
         doc
             .font("Helvetica-Bold")
-            .fillColor(colors.black)
+            .fillColor(colors.primary)
             .text(`${item.total.toFixed(2)} TK`, 460, y, {
             width: 75,
             align: "right",
         });
-        y += variant ? 42 : 34;
+        y += variant ? 45 : 35;
     });
-    // Table line
-    doc
-        .moveTo(50, y)
-        .lineTo(545, y)
-        .strokeColor(colors.border)
-        .stroke();
     /* =========================
         TOTALS
     ========================== */
-    y += 25;
+    y += 30;
     doc
         .fontSize(10)
         .font("Helvetica")
-        .fillColor(colors.gray)
+        .fillColor(colors.muted)
         .text("Subtotal", 380, y, {
         width: 80,
         align: "right",
@@ -262,7 +305,7 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
     });
     y += 22;
     doc
-        .fillColor(colors.gray)
+        .fillColor(colors.muted)
         .text(order.deliveryType, 380, y, {
         width: 80,
         align: "right",
@@ -273,83 +316,92 @@ const generateInvoice = (order) => __awaiter(void 0, void 0, void 0, function* (
         width: 80,
         align: "right",
     });
-    y += 12;
+    y += 18;
+    // Gold divider
     doc
-        .moveTo(380, y)
+        .moveTo(385, y)
         .lineTo(545, y)
-        .strokeColor(colors.border)
+        .strokeColor(colors.accent)
+        .lineWidth(1.5)
         .stroke();
     y += 18;
-    // NO BACKGROUND TOTAL
+    // TOTAL
     doc
-        .fontSize(13)
+        .fontSize(12) // smaller from 14
         .font("Helvetica-Bold")
-        .fillColor(colors.black)
-        .text("TOTAL", 380, y, {
-        width: 80,
+        .fillColor(colors.primary)
+        .text("TOTAL", 340, y, {
+        width: 100,
         align: "right",
     });
     doc
-        .fontSize(16)
+        .fontSize(14) // smaller from 18
         .font("Helvetica-Bold")
-        .text(`${order.totalAmount.toFixed(2)} TK`, 455, y - 2, {
-        width: 90,
+        .fillColor(colors.primary)
+        .text(`${order.totalAmount.toFixed(2)} TK`, 430, y, {
+        width: 115,
         align: "right",
     });
     /* =========================
         PAYMENT INFO
     ========================== */
-    y += 55;
+    y += 60;
     doc
-        .roundedRect(50, y, 495, 75, 8)
-        .lineWidth(1)
-        .strokeColor(colors.border)
-        .stroke();
+        .roundedRect(50, y, 495, 85, 10)
+        .fillAndStroke(colors.soft, colors.border);
     doc
-        .fontSize(11)
+        .fontSize(12)
         .font("Helvetica-Bold")
-        .fillColor(colors.black)
-        .text("PAYMENT INFORMATION", 65, y + 15);
-    // Payment Method
+        .fillColor(colors.primary)
+        .text("PAYMENT INFORMATION", 65, y + 18);
+    doc
+        .moveTo(65, y + 40)
+        .lineTo(180, y + 40)
+        .strokeColor(colors.accent)
+        .lineWidth(2)
+        .stroke();
+    // Method
     doc
         .fontSize(9)
         .font("Helvetica-Bold")
-        .fillColor(colors.gray)
-        .text("Payment Method:", 65, y + 42);
+        .fillColor(colors.muted)
+        .text("Payment Method:", 65, y + 55);
     doc
         .font("Helvetica")
         .fillColor(colors.black)
-        .text(order.paymentMethod, 170, y + 42);
+        .text(order.paymentMethod, 170, y + 55);
     // Status
     doc
         .font("Helvetica-Bold")
-        .fillColor(colors.gray)
-        .text("Status:", 340, y + 42);
+        .fillColor(colors.muted)
+        .text("Status:", 340, y + 55);
     doc
         .font("Helvetica-Bold")
         .fillColor(order.paymentStatus.toLowerCase() === "paid"
         ? colors.success
         : colors.danger)
-        .text(order.paymentStatus, 390, y + 42);
+        .text(order.paymentStatus.toUpperCase(), 390, y + 55);
     /* =========================
         FOOTER
     ========================== */
     doc
         .moveTo(50, 770)
         .lineTo(545, 770)
-        .strokeColor(colors.border)
+        .strokeColor(colors.accent)
+        .lineWidth(1)
         .stroke();
     doc
         .fontSize(8)
-        .font("Helvetica")
-        .fillColor(colors.gray)
+        .font("Helvetica-Oblique")
+        .fillColor(colors.muted)
         .text("This is a system-generated invoice. No signature required.", 50, 780, {
         align: "center",
         width: 495,
     });
     doc
-        .fontSize(8)
-        .text("Thank you for your business!", 50, 794, {
+        .fontSize(9)
+        .font("Helvetica")
+        .text("Thank you for your business!", 50, 796, {
         align: "center",
         width: 495,
     });
