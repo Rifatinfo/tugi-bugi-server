@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const user_routes_1 = require("../modules/user/user.routes");
 const product_routes_1 = require("../modules/product/product.routes");
 const auth_routes_1 = require("../modules/auth/auth.routes");
+const order_routes_1 = require("../modules/order/order.routes");
 const router = express_1.default.Router();
 // router.use(apiLimiter);
 const moduleRoutes = [
@@ -21,6 +22,10 @@ const moduleRoutes = [
     {
         path: '/auth',
         route: auth_routes_1.AuthRoutes
+    },
+    {
+        path: '/order',
+        route: order_routes_1.OrderRoutes
     }
 ];
 moduleRoutes.forEach(route => router.use(route.path, route.route));
