@@ -7,7 +7,9 @@ import { parseDeliveryType } from "../../../utils/parseDeliveryType";
 import { generateInvoice } from "../../../utils/invoice";
 import { saveInvoicePdf } from "../../../utils/invoiceUrl";
 import { sendEmail } from "../../../utils/sendEmail";
-import { PaymentMethod } from "@prisma/client";
+import { OrderStatus, PaymentMethod, Prisma } from "@prisma/client";
+import { orderSearchableFields } from "./order.constant";
+import { paginationHelper } from "../../../helpers/paginationHelper";
 
 const getTransactionId = () => {
   return "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
@@ -15,248 +17,6 @@ const getTransactionId = () => {
 const generateOrderSerial = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
-
-// const createOrderService = async ({
-//   payload,
-//   userId,
-//   userEmail,
-// }: {
-//   payload: CreateOrderDTO;
-//   userId?: string;
-//   userEmail?: string;
-// }) => {
-//   const { deliveryInfo, cartItems, paymentMethod, deliveryType } = payload;
-
-//   if (!cartItems || cartItems.length === 0) {
-//     throw new ApiError(StatusCodes.BAD_REQUEST, "Cart is empty");
-//   }
-
-//   const deliveryCharge = DELIVERY_CHARGE[deliveryType];
-//   if (deliveryCharge === undefined) {
-//     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid delivery option");
-//   }
-
-//   // ================== Database Transaction ==================
-//   const result = await prisma.$transaction(async (tx) => {
-//     let subtotal = 0;
-
-//     // ================== Prepare order items ================== //
-//     const orderItems = await Promise.all(
-//       cartItems.map(async (item) => {
-//         const product = await tx.product.findUnique({
-//           where: { id: item.productId },
-//           include: { images: true },
-//         });
-//         if (!product)
-//           throw new ApiError(StatusCodes.NOT_FOUND, "Product not found");
-
-//         const variant = await tx.variant.findFirst({
-//           where: {
-//             productId: item.productId,
-//             color: item.color,
-//             size: item.size,
-//           },
-//         });
-//         if (!variant)
-//           throw new ApiError(StatusCodes.NOT_FOUND, "Variant not found");
-//         if (variant.quantity < item.quantity) {
-//           throw new ApiError(
-//             StatusCodes.BAD_REQUEST,
-//             `Insufficient stock for ${product.name} ${item.color} ${item.size}`,
-//           );
-//         }
-
-//         const price = product.salePrice ?? product.regularPrice;
-//         const total = price * item.quantity;
-//         subtotal += total;
-
-//         return {
-//           productId: product.id,
-//           productName: product.name,
-//           variantId: variant.id,
-//           price,
-//           quantity: item.quantity,
-//           total,
-//           color: item.color,
-//           size: item.size,
-//           sku: product.sku,
-//           productImage: product.images[0]?.url || null,
-//         };
-//       }),
-//     );
-
-//     const totalAmount = subtotal + deliveryCharge;
-
-//     // ================== Create Order ================== //
-//     const order = await tx.order.create({
-//       data: {
-//         userId: userId ?? null,
-//         name: deliveryInfo.name,
-//         phone: deliveryInfo.phone,
-//         state: deliveryInfo.state,
-//         address: deliveryInfo.address,
-//         deliveryCharge,
-//         checkoutEmail: userEmail ?? payload.checkoutEmail,
-//         deliveryType: parseDeliveryType(deliveryType),
-//         subtotal,
-//         totalAmount,
-//         paymentMethod:
-//           paymentMethod === "ONLINE" ? PaymentMethod.ONLINE : PaymentMethod.COD,
-//         orderStatus: "PENDING",
-//         paymentStatus: "UNPAID",
-//         items: { create: orderItems }, // nested create works normally
-//       },
-//       include: { items: true },
-//     });
-
-//     // ================== Reduce Variant Stock ================== //
-//     for (const item of cartItems) {
-//       await tx.variant.updateMany({
-//         where: {
-//           productId: item.productId,
-//           color: item.color,
-//           size: item.size,
-//         },
-//         data: { quantity: { decrement: item.quantity } },
-//       });
-//     }
-
-//     // ================== Reduce Product Stock ================== //
-//     for (const item of cartItems) {
-//       await tx.product.update({
-//         where: { id: item.productId },
-//         data: { stockQuantity: { decrement: item.quantity } },
-//       });
-//     }
-
-//     // ================== Create Payment ================== //
-
-//     return {
-//       ...order,
-//       //   payment,
-//       deliveryType,
-//       deliveryCharge,
-//       items: order.items, // preserve for invoice/email
-//     };
-//   });
-//   // ================== Invoice Generation ==================
-//   const orderSerialId = generateOrderSerial();
-
-//   let invoiceUrl: string | null = null;
-//   if (paymentMethod === "COD") {
-//     const pdfBuffer = await generateInvoice({
-//       id: result.id,
-//       orderSerial: orderSerialId,
-//       name: result.name,
-//       phone: result.phone,
-//       address: result.address,
-//       state: result.state,
-//       checkoutEmail: result.checkoutEmail,
-//       paymentMethod: "Cash on Delivery",
-//       paymentStatus: result.paymentStatus,
-//       subtotal: result.subtotal,
-//       totalAmount: result.totalAmount,
-//       deliveryType: result.deliveryType,
-//       deliveryCharge: result.deliveryCharge,
-//       createdAt: result.createdAt,
-//       items: result.items.map((item: any) => ({
-//         productName: item.productName,
-//         price: item.price,
-//         quantity: item.quantity,
-//         total: item.total,
-//         color: item.color,
-//         size: item.size,
-//         sku: item.sku,
-//       })),
-//     });
-
-//     invoiceUrl = await saveInvoicePdf(pdfBuffer, `invoice-${result.id}`);
-
-//     await prisma.order.update({
-//       where: { id: result.id },
-//       data: { invoiceUrl },
-//     });
-//     // await prisma.payment.update({ where: { id: result.payment.id }, data: { invoiceUrl } });
-
-//     result.invoiceUrl = invoiceUrl;
-//     // result.payment.invoiceUrl = invoiceUrl;
-//     const emailToSend = userEmail || result.checkoutEmail;
-//     if (emailToSend) {
-//       await sendEmail({
-//         to: emailToSend,
-//         subject: "Your Order Invoice",
-
-//         // ✅ DIRECT HTML (no templateName, no templateData)
-//         html: `
-//       <div style="font-family: Arial, sans-serif; padding: 20px;">
-//         <h2>Order Confirmed</h2>
-
-//         <p>Hi <strong>${result.name}</strong>,</p>
-
-//         <p>
-//           Your order <strong>#${result.id}</strong> has been placed successfully.
-//         </p>
-
-//         <p><strong>Total:</strong> ${result.totalAmount}</p>
-//         <p><strong>Subtotal:</strong> ${result.subtotal}</p>
-//         <p><strong>Shipping:</strong> ${result.deliveryCharge}</p>
-//         <p><strong>Payment Method:</strong> ${result.paymentMethod}</p>
-
-//         <p><strong>Address:</strong> ${result.address}, ${result.state}</p>
-
-//         <hr />
-
-//         <h3>Items</h3>
-
-//         ${result.items
-//           .map(
-//             (item: any) => `
-//               <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-
-//                 <img
-//                   src="${item?.thumbnailImage}"
-//                   style="width:70px;height:70px;object-fit:cover;border-radius:6px;"
-//                 />
-
-//                 <div>
-//                   <strong>${item.productName}</strong><br/>
-//                   Qty: ${item.quantity}<br/>
-//                   Price: ${item.price} TK<br/>
-//                   Total: ${item.total} TK
-//                 </div>
-//               </div>
-//             `,
-//           )
-//           .join("")}
-
-//         <p style="margin-top:20px;">
-//           A PDF invoice is attached with this email.
-//         </p>
-
-//         <p>Thank you for shopping with us ❤️</p>
-//       </div>
-//     `,
-
-//         //  PDF ATTACHMENT
-//         attachments: [
-//           {
-//             filename: `invoice-${result.id}.pdf`,
-//             content: pdfBuffer,
-//             contentType: "application/pdf",
-//           },
-//         ],
-//       });
-//     }
-//   }
-
-//   // ================== Online Payment ==================
-
-//   // ================== Cash on Delivery ==================
-//   return {
-//     order: result,
-//     deliveryCharge: result.deliveryCharge,
-//   };
-// };
 
 const createOrderService = async ({
   payload,
@@ -385,9 +145,7 @@ const createOrderService = async ({
         totalAmount,
 
         paymentMethod:
-          paymentMethod === "ONLINE"
-            ? PaymentMethod.ONLINE
-            : PaymentMethod.COD,
+          paymentMethod === "ONLINE" ? PaymentMethod.ONLINE : PaymentMethod.COD,
 
         orderStatus: "PENDING",
         paymentStatus: "UNPAID",
@@ -515,48 +273,6 @@ const createOrderService = async ({
 // HELPER: Email HTML Builder (extracted for clarity)
 // =========================
 
-// function buildOrderEmailHtml(result: any): string {
-//   return `
-//     <div style="font-family: Arial; padding: 20px;">
-//       <h2>Order Confirmed</h2>
-
-//       <p>Hi <strong>${result.name}</strong>,</p>
-
-//       <p>Your order <strong>#${result.id}</strong> has been placed successfully.</p>
-
-//       <p><strong>Total:</strong> ${result.totalAmount}</p>
-//       <p><strong>Shipping:</strong> ${result.deliveryCharge}</p>
-//       <p><strong>Payment Method:</strong> ${result.paymentMethod}</p>
-
-//       <hr />
-
-//       <h3>Items</h3>
-
-//       ${result.items
-//         .map(
-//           (item: any) => `
-//             <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-//               <img
-//                 src="${process.env.NEXT_PUBLIC_API_URL}${item.productImage}"
-//                 style="width:70px;height:70px;object-fit:cover;border-radius:6px;"
-//               />
-//               <div>
-//                 <strong>${item.productName}</strong><br/>
-//                 Qty: ${item.quantity}<br/>
-//                 Price: ${item.price} TK<br/>
-//                 Total: ${item.total} TK
-//               </div>
-//             </div>
-//           `,
-//         )
-//         .join("")}
-
-//       <p style="margin-top:20px;">A PDF invoice is attached with this email.</p>
-//       <p>Thank you for shopping with us ❤️</p>
-//     </div>
-//   `;
-// }
-
 export function buildOrderEmailHtml(result: any): string {
   const BRAND = "#e8731a";
   const DARK = "#111827";
@@ -565,15 +281,12 @@ export function buildOrderEmailHtml(result: any): string {
   const LIGHT = "#f9fafb";
   const SOFT = "#fff7f2";
 
-
   const itemsHtml = result.items
     ?.map(
       (item: any, index: number) => `
       <tr>
         <td style="padding:16px;border-bottom:${
-          index !== result.items.length - 1
-            ? `1px solid ${BORDER}`
-            : "none"
+          index !== result.items.length - 1 ? `1px solid ${BORDER}` : "none"
         };vertical-align:top;">
 
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -614,7 +327,7 @@ export function buildOrderEmailHtml(result: any): string {
 
         </td>
       </tr>
-    `
+    `,
     )
     .join("");
 
@@ -804,6 +517,107 @@ export function buildOrderEmailHtml(result: any): string {
 </html>
   `.trim();
 }
+
+const getAllOrdersService = async (params: any, options: any) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+  const { searchTerm, ...filterData } = params;
+  const andConditions: Prisma.OrderWhereInput[] = [];
+  // ============ Search  =============//
+  if (searchTerm) {
+    andConditions.push({
+      OR: orderSearchableFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  //=================== Filters  =================//
+  if (Object.keys(filterData).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterData).map((key) => ({
+        [key]: {
+          equals: (filterData as any)[key],
+        },
+      })),
+    });
+  }
+
+  const whereCondition: Prisma.OrderWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const orders = await prisma.order.findMany({
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+    where: whereCondition,
+    include: {
+      items: true,
+
+      shipmentTrackings: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
+    },
+  });
+  const total = await prisma.order.count({ where: whereCondition });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: orders,
+  };
+};
+
+const updateOrderStatusService = async (
+  orderId: string,
+  status: OrderStatus,
+) => {
+  return prisma.order.update({
+    where: { id: orderId },
+    data: { orderStatus: status },
+  });
+};
+
+const getOrderTrackingService = async (orderId: string, userId: string) => {
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId, //  user can see only own order
+    },
+    include: {
+      shipmentTrackings: {
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  return {
+    orderStatus: order.orderStatus,
+    shipmentTimeline: order.shipmentTrackings,
+    createdAt: order.createdAt,
+  };
+};
+
 export const orderService = {
   createOrderService,
+  getAllOrdersService,
+  updateOrderStatusService,
+  getOrderTrackingService,
 };

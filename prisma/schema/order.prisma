@@ -19,10 +19,10 @@ model Order {
   orderStatus   OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
   paymentMethod PaymentMethod
-
   deliveryCharge Decimal?
   deliveryType   DeliveryType?
   items   OrderItem[]
+  shipmentTrackings ShipmentTracking[]
   
 
   createdAt DateTime @default(now())
@@ -53,5 +53,17 @@ model OrderItem {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+
+model ShipmentTracking {
+  id        String          @id @default(uuid())
+  orderId  String
+  status   ShipmentStatus
+  message  String?
+  location String?
+  createdAt DateTime        @default(now())
+
+  order     Order           @relation(fields: [orderId], references: [id])
 }
 
