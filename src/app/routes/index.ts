@@ -4,11 +4,12 @@ import { ProductRoutes } from '../modules/product/product.routes';
 import { AuthRoutes } from '../modules/auth/auth.routes';
 import { apiLimiter } from '../middlewares/rateLimiter';
 import { OrderRoutes } from '../modules/order/order.routes';
+import { AdminRoutes } from '../modules/admin/admin.routes';
 
 
 const router = express.Router();
 
-// router.use(apiLimiter);
+router.use(apiLimiter);
 
 const moduleRoutes = [
     
@@ -27,7 +28,11 @@ const moduleRoutes = [
     {
         path: '/order',
         route: OrderRoutes
-    }
+    },
+    {
+        path : "/admin",
+        route : AdminRoutes
+    },
 ];
 
 moduleRoutes.forEach(route => router.use(route.path, route.route))
